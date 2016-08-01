@@ -16,6 +16,12 @@ typedef struct mpdr_routing_table {
   mpdr_routing_item_t items[MAX_MPDR_TABLE_SIZE];
 } mpdr_routing_table_t;
 
+typedef nx_struct mpdr_msg_hdr {
+  nx_am_addr_t source;
+  nx_am_addr_t destination;
+  nx_am_addr_t next_hop;
+} mpdr_msg_hdr_t;
+
 typedef nx_struct mpdr_msg {
   nx_am_addr_t source;
   nx_am_addr_t destination;

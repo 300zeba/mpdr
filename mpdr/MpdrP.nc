@@ -3,14 +3,18 @@ configuration MpdrP {
   provides {
     interface StdControl;
     interface MpdrRouting;
-    interface MpdrCommunication;
+    interface AMSend;
+    interface Receive;
+    interface Packet;
   }
 }
 
 implementation {
   components new MpdrForwardingEngineP() as Forwarder;
   StdControl = Forwarder;
-  MpdrCommunication = Forwarder;
+  AMSend = Forwarder;
+  Receive = Forwarder;
+  Packet = Forwarder;
 
   components new MpdrRoutingEngineP() as Router;
   StdControl = Router;
@@ -19,11 +23,13 @@ implementation {
   components RF231ActiveMessageC;
   components RF212ActiveMessageC;
 
-  Forwarder.RoutingTable -> Router;
+  Forwarder.Routing -> Router;
   Forwarder.Radio1Send -> RF231ActiveMessageC.AMSend[22];
   Forwarder.Radio2Send -> RF212ActiveMessageC.AMSend[22];
   Forwarder.Radio1Receive -> RF231ActiveMessageC.Receive[22];
   Forwarder.Radio2Receive -> RF212ActiveMessageC.Receive[22];
+  Forwarder.Radio1Packet -> RF231ActiveMessageC;
+  Forwarder.Radio2Packet -> RF212ActiveMessageC;
 
   components new PoolC(message_t, 100);
   components new QueueC(message_t*, 100) as Radio1Queue;

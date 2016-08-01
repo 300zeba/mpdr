@@ -69,8 +69,12 @@ implementation {
     return FAIL;
   }
 
-  command void MpdrRouting.setNumRoutes(uint8_t num_paths) {
+  command void MpdrRouting.setNumPaths(uint8_t num_paths) {
     numRoutes = num_paths;
+  }
+
+  command uint8_t MpdrRouting.getNumPaths() {
+    return numRoutes;
   }
 
   bool inFwdTable(am_addr_t source, am_addr_t destination, am_addr_t next_hop) {
@@ -90,7 +94,8 @@ implementation {
     for (i = 0; i < sendTable.size; i++) {
       if (sendTable.items[i].source == source &&
           sendTable.items[i].destination == destination &&
-          sendTable.items[i].next_hop == next_hop) {
+          sendTable.items[i].next_hop == next_hop &&
+          destination != next_hop) {
         return TRUE;
       }
     }
@@ -140,7 +145,11 @@ implementation {
     rmsg->destination = destination;
     rmsg->last_hop = TOS_NODE_ID;
     rmsg->path_id = path_id;
-    next_hop = items[0];
+    if (size > 0) {
+      next_hop = items[0];
+    } else {
+      next_hop = source;
+    }
     rmsg->next_hop = next_hop;
     if (size > 0) {
       size--;
@@ -150,9 +159,7 @@ implementation {
       rmsg->items[i] = items[i+1];
     }
     call RoutingAck.requestAck(&msgBuffer);
-    //call SerialLogger.log(51, next_hop);
     result = call RoutingSend.send(next_hop, &msgBuffer, sizeof(mpdr_routing_msg_t));
-    //call SerialLogger.log(52, result);
     return result;
   }
 
@@ -169,14 +176,13 @@ implementation {
         received2 = TRUE;
       }
       received++;
-      call SerialLogger.log(55, received);
-      call SerialLogger.log(56, rmsg->last_hop);
+      // call SerialLogger.log(21, rmsg->last_hop);
       addSendRoute(rmsg->source, rmsg->destination, rmsg->last_hop);
       if (((numRoutes == 1) && (received1 || received2)) || ((numRoutes == 2) && received1 && received2)) {
         signal MpdrRouting.pathsReady(rmsg->destination);
       }
     } else {
-      call SerialLogger.log(54, rmsg->last_hop);
+      // call SerialLogger.log(22, rmsg->last_hop);
       addFwdRoute(rmsg->source, rmsg->destination, rmsg->last_hop);
       if (rmsg->size > 0) {
         next_hop = rmsg->items[0];
@@ -205,11 +211,9 @@ implementation {
   event void RoutingSend.sendDone(message_t* msg, error_t error) {
     mpdr_routing_msg_t* rmsg = call RoutingSend.getPayload(msg, sizeof(mpdr_routing_msg_t));
     if (error != SUCCESS) {
-      call SerialLogger.log(53, rmsg->next_hop);
-      call SerialLogger.log(57, error);
       call RoutingSend.send(rmsg->next_hop, msg, sizeof(mpdr_routing_msg_t));
     } else {
-      call SerialLogger.log(50, rmsg->next_hop);
+      // call SerialLogger.log(23, rmsg->next_hop);
     }
   }
 //FIX

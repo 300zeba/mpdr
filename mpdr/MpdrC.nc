@@ -4,7 +4,9 @@ configuration MpdrC {
   provides {
     interface StdControl;
     interface MpdrRouting;
-    interface MpdrCommunication;
+    interface AMSend;
+    interface Receive;
+    interface Packet;
   }
 }
 
@@ -12,5 +14,7 @@ implementation {
   components MpdrP;
   StdControl = MpdrP;
   MpdrRouting = MpdrP;
-  MpdrCommunication = MpdrP;
+  AMSend = MpdrP;
+  Receive = MpdrP;
+  Packet = MpdrP;
 }
