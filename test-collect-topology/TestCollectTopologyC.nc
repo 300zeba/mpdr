@@ -99,6 +99,7 @@ implementation {
     serialMsg = call SerialSend.getPayload(&serialMsgBuffer, sizeof(topology_msg_t));
     serialMsg->source = topMsg->source;
     serialMsg->neighbor = topMsg->neighbor;
+    serialMsg->radio = topMsg->radio;
     serialMsg->quality = topMsg->quality;
     call SerialSend.send(AM_BROADCAST_ADDR, &serialMsgBuffer, sizeof(topology_msg_t));
     return msg;
@@ -144,7 +145,13 @@ implementation {
       topMsg->quality = call Estimator.getLinkQuality(topMsg->neighbor, current_radio);
       call CollectionSend.send(&topMsgBuffer, sizeof(topology_msg_t));
     } else {
-      call NodeTimer.stop();
+      if (current_radio == 1) {
+        current_radio = 2;
+        current_neighbor = 0;
+        return;
+      } else {
+        call NodeTimer.stop();
+      }
     }
     current_neighbor++;
   }
