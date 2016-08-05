@@ -4,7 +4,7 @@
 #include <AM.h>
 
 #define CL_TEST 0xEE
-#define MAX_NEIGHBORS 10
+#define MAX_NEIGHBORS 40
 #define MAX_NODES 100
 #define INVALID_ADDR TOS_BCAST_ADDR
 
