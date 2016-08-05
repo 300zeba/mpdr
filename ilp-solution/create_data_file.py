@@ -1,4 +1,6 @@
 import re
+import networkx as nx
+import matplotlib.pyplot as plt
 
 def read_log_file(file, format):
     """
@@ -90,15 +92,52 @@ def create_data_file(nodes, links1, links2, output):
         output.write(str(key[0]) + "," + str(key[1]) + " " + str(w1) + " " + str(w2) + "\n")
     output.write(";\nend;")
 
+def grid_layout(G, width, height):
+    layout = {}
+    for node in G.nodes():
+        layout[node] = [(node-1) % width, 10-(node-1) // height]
+    return layout
+
+
+def create_nx_digraph(nodes, links, filename):
+    G = nx.DiGraph()
+    G.add_nodes_from(nodes)
+    G.add_edges_from(links.keys())
+    for key, value in links.iteritems():
+        G[key[0]][key[1]]['weight'] = (100-value) if (100-value) >= 1 else 1
+    isolates = nx.isolates(G)
+    G.remove_nodes_from(isolates)
+    pos = grid_layout(G, 10, 10)
+    nx.draw_networkx_nodes(G, pos)
+    nx.draw_networkx_edges(G, pos, arrows=False)
+    nx.draw_networkx_labels(G, pos)
+    plt.savefig(filename)
+    plt.show()
+
+def get_link_difference(links1, links2):
+    link_diff = {}
+    for key, value in links1.iteritems():
+        if key not in links2:
+            link_diff[key] = value
+    return link_diff
+
+def get_link_intersection(links1, links2):
+    link_inter = {}
+    for key, value in links1.iteritems():
+        if key in links2:
+            link_inter[key] = value
+    return link_inter;
+
 def main():
     inputFile = open("node_1", "r")
     outputFile = open("opal.dat", "w")
     log = read_log_file(inputFile, ["uint16_t", "uint16_t", "uint8_t", "uint16_t"])
-    print log
     nodes = get_nodes(log)
     links1 = get_links(log, 1)
     links2 = get_links(log, 2)
     create_data_file(nodes, links1, links2, outputFile)
+    both_links = get_link_intersection(links1, links2)
+    create_nx_digraph(nodes, both_links, "both_links.png")
 
 if __name__ == "__main__":
     main()
