@@ -1,4 +1,5 @@
 #include "Mpdr.h"
+#include "../serial-logger/SerialLogger.h"
 
 generic module MpdrRoutingEngineP() {
   provides {
@@ -6,8 +7,12 @@ generic module MpdrRoutingEngineP() {
     interface MpdrRouting;
   }
   uses {
-    interface AMSend as RoutingSend;
-    interface Receive as RoutingReceive;
+    interface AMSend as RoutingSend1;
+    interface Receive as RoutingReceive1;
+    interface AMSend as RoutingSend2;
+    interface Receive as RoutingReceive2;
+    interface RadioChannel as RadioChannel1;
+    interface RadioChannel as RadioChannel2;
     interface PacketAcknowledgements as RoutingAck;
     interface SerialLogger;
   }
@@ -102,7 +107,8 @@ implementation {
     return FALSE;
   }
 
-  error_t addFwdRoute(am_addr_t source, am_addr_t destination, am_addr_t next_hop) {
+  error_t addFwdRoute(am_addr_t source, am_addr_t destination,
+                      am_addr_t next_hop, uint8_t radio, uint8_t channel) {
     if (fwdTable.size >= MAX_MPDR_TABLE_SIZE) {
       return FAIL;
     }
@@ -112,11 +118,14 @@ implementation {
     fwdTable.items[fwdTable.size].source = source;
     fwdTable.items[fwdTable.size].destination = destination;
     fwdTable.items[fwdTable.size].next_hop = next_hop;
+    fwdTable.items[fwdTable.size].radio = radio;
+    fwdTable.items[fwdTable.size].channel = channel;
     fwdTable.size++;
     return SUCCESS;
   }
 
-  error_t addSendRoute(am_addr_t source, am_addr_t destination, am_addr_t next_hop) {
+  error_t addSendRoute(am_addr_t source, am_addr_t destination,
+                       am_addr_t next_hop, uint8_t radio, uint8_t channel) {
     if (sendTable.size >= MAX_MPDR_TABLE_SIZE) {
       return FAIL;
     }
@@ -126,12 +135,17 @@ implementation {
     sendTable.items[sendTable.size].source = source;
     sendTable.items[sendTable.size].destination = destination;
     sendTable.items[sendTable.size].next_hop = next_hop;
+    sendTable.items[sendTable.size].radio = radio;
+    sendTable.items[sendTable.size].channel = channel;
     sendTable.size++;
     return SUCCESS;
   }
 
-  command error_t MpdrRouting.addRoutingItem(am_addr_t source, am_addr_t destination, am_addr_t next_hop) {
-    return addFwdRoute(source, destination, next_hop);
+  command error_t MpdrRouting.addRoutingItem(am_addr_t source,
+                                             am_addr_t destination,
+                                             am_addr_t next_hop, uint8_t radio,
+                                             uint8_t channel) {
+    return addFwdRoute(source, destination, next_hop, radio, channel);
   }
 
   command error_t MpdrRouting.sendRouteMsg(am_addr_t source, am_addr_t destination,
@@ -139,7 +153,7 @@ implementation {
                                                 am_addr_t* items) {
     uint8_t i;
     am_addr_t next_hop;
-    mpdr_routing_msg_t* rmsg = call RoutingSend.getPayload(&msgBuffer, sizeof(mpdr_routing_msg_t));
+    mpdr_routing_msg_t* rmsg = call RoutingSend1.getPayload(&msgBuffer, sizeof(mpdr_routing_msg_t));
     error_t result;
     rmsg->source = source;
     rmsg->destination = destination;
@@ -158,16 +172,39 @@ implementation {
     for (i = 0; i < size; i++) {
       rmsg->items[i] = items[i+1];
     }
+    if (path_id == 1) {
+      rmsg->last_radio = 1;
+      rmsg->last_channel = 1;
+    } else {
+      rmsg->last_radio = 2;
+      rmsg->last_channel = 2;
+    }
     call RoutingAck.requestAck(&msgBuffer);
-    result = call RoutingSend.send(next_hop, &msgBuffer, sizeof(mpdr_routing_msg_t));
+    if (rmsg->last_radio == 1) {
+      result = call RoutingSend1.send(next_hop, &msgBuffer,
+                                      sizeof(mpdr_routing_msg_t));
+    } else {
+      result = call RoutingSend2.send(next_hop, &msgBuffer,
+                                      sizeof(mpdr_routing_msg_t));
+    }
+
     return result;
   }
 
-  event message_t* RoutingReceive.receive(message_t* msg, void* payload, uint8_t len) {
+  void receivedRoutingMsg(message_t* msg, void* payload, uint8_t len) {
     mpdr_routing_msg_t* rmsg = (mpdr_routing_msg_t*) payload;
-    mpdr_routing_msg_t* smsg = call RoutingSend.getPayload(&msgBuffer, sizeof(mpdr_routing_msg_t));
+    mpdr_routing_msg_t* smsg = call RoutingSend1.getPayload(&msgBuffer,
+                                                    sizeof(mpdr_routing_msg_t));
     am_addr_t next_hop;
     uint8_t i;
+    uint8_t channel;
+    if (rmsg->last_radio == 1) {
+      channel = (rmsg->last_channel == 1) ? 26 : 15;
+      call RadioChannel1.setChannel(channel);
+    } else {
+      channel = (rmsg->last_channel == 1) ? 6 : 10;
+      call RadioChannel2.setChannel(channel);
+    }
     if (rmsg->source == TOS_NODE_ID) {
       if (rmsg->path_id == 1) {
         received1 = TRUE;
@@ -177,13 +214,16 @@ implementation {
       }
       received++;
       // call SerialLogger.log(21, rmsg->last_hop);
-      addSendRoute(rmsg->source, rmsg->destination, rmsg->last_hop);
-      if (((numRoutes == 1) && (received1 || received2)) || ((numRoutes == 2) && received1 && received2)) {
+      addSendRoute(rmsg->source, rmsg->destination, rmsg->last_hop,
+                   rmsg->last_radio, rmsg->last_channel);
+      if (((numRoutes == 1) && (received1 || received2)) ||
+          ((numRoutes == 2) && received1 && received2)) {
         signal MpdrRouting.pathsReady(rmsg->destination);
       }
     } else {
       // call SerialLogger.log(22, rmsg->last_hop);
-      addFwdRoute(rmsg->source, rmsg->destination, rmsg->last_hop);
+      addFwdRoute(rmsg->source, rmsg->destination, rmsg->last_hop,
+                  rmsg->last_radio, rmsg->last_channel);
       if (rmsg->size > 0) {
         next_hop = rmsg->items[0];
       } else {
@@ -202,19 +242,73 @@ implementation {
       for (i = 0; i < smsg->size; i++) {
         smsg->items[i] = rmsg->items[i+1];
       }
+      if (rmsg->last_radio == 1) {
+        smsg->last_radio = 2;
+      } else {
+        smsg->last_radio = 1;
+      }
+      if (rmsg->path_id == 1) {
+        if (rmsg->last_radio == 2) {
+          smsg->last_channel = (rmsg->last_channel == 1) ? 2 : 1;
+        } else {
+          smsg->last_channel = rmsg->last_channel;
+        }
+      } else {
+        if (rmsg->last_radio == 1) {
+          smsg->last_channel = (rmsg->last_channel == 1) ? 2 : 1;
+        } else {
+          smsg->last_channel = rmsg->last_channel;
+        }
+      }
       call RoutingAck.requestAck(&msgBuffer);
-      call RoutingSend.send(next_hop, &msgBuffer, sizeof(mpdr_routing_msg_t));
+      if (smsg->last_radio == 1) {
+        call RoutingSend1.send(next_hop, &msgBuffer, sizeof(mpdr_routing_msg_t));
+      } else {
+        call RoutingSend2.send(next_hop, &msgBuffer, sizeof(mpdr_routing_msg_t));
+      }
     }
+  }
+
+  event message_t* RoutingReceive1.receive(message_t* msg, void* payload, uint8_t len) {
+    receivedRoutingMsg(msg, payload, len);
     return msg;
   }
 
-  event void RoutingSend.sendDone(message_t* msg, error_t error) {
-    mpdr_routing_msg_t* rmsg = call RoutingSend.getPayload(msg, sizeof(mpdr_routing_msg_t));
+  event message_t* RoutingReceive2.receive(message_t* msg, void* payload, uint8_t len) {
+    receivedRoutingMsg(msg, payload, len);
+    return msg;
+  }
+
+  event void RoutingSend1.sendDone(message_t* msg, error_t error) {
+    mpdr_routing_msg_t* rmsg = call RoutingSend1.getPayload(msg, sizeof(mpdr_routing_msg_t));
+    uint8_t channel;
     if (error != SUCCESS) {
-      call RoutingSend.send(rmsg->next_hop, msg, sizeof(mpdr_routing_msg_t));
+      call RoutingSend1.send(rmsg->next_hop, msg, sizeof(mpdr_routing_msg_t));
     } else {
-      // call SerialLogger.log(23, rmsg->next_hop);
+      channel = (rmsg->last_channel == 1) ? 26 : 15;
+      call RadioChannel1.setChannel(channel);
     }
   }
-//FIX
+
+  event void RoutingSend2.sendDone(message_t* msg, error_t error) {
+    mpdr_routing_msg_t* rmsg = call RoutingSend2.getPayload(msg, sizeof(mpdr_routing_msg_t));
+    uint8_t channel;
+    if (error != SUCCESS) {
+      call RoutingSend2.send(rmsg->next_hop, msg, sizeof(mpdr_routing_msg_t));
+    } else {
+      channel = (rmsg->last_channel == 1) ? 6 : 10;
+      call RadioChannel2.setChannel(channel);
+    }
+  }
+
+  event void RadioChannel1.setChannelDone() {
+    uint8_t channel = call RadioChannel1.getChannel();
+    call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL, channel);
+  }
+
+  event void RadioChannel2.setChannelDone() {
+    uint8_t channel = call RadioChannel1.getChannel();
+    call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL, channel);
+  }
+
 }

@@ -9,6 +9,8 @@ typedef struct mpdr_routing_item {
   am_addr_t source;
   am_addr_t destination;
   am_addr_t next_hop;
+  uint8_t radio;
+  uint8_t channel;
 } mpdr_routing_item_t;
 
 typedef struct mpdr_routing_table {
@@ -36,6 +38,8 @@ typedef nx_struct mpdr_routing_msg {
   nx_am_addr_t last_hop;
   nx_uint8_t path_id;
   nx_uint8_t size;
+  nx_uint8_t last_radio;
+  nx_uint8_t last_channel;
   nx_am_addr_t items[MAX_MPDR_HOPS];
 } mpdr_routing_msg_t;
 

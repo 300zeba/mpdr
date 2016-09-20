@@ -39,9 +39,13 @@ implementation {
   Forwarder.Radio1Queue -> Radio1Queue;
   Forwarder.Radio2Queue -> Radio2Queue;
 
-  Router.RoutingSend -> RF231ActiveMessageC.AMSend[23];
+  Router.RoutingSend1 -> RF231ActiveMessageC.AMSend[23];
+  Router.RoutingSend2 -> RF212ActiveMessageC.AMSend[23];
   Router.RoutingAck -> RF231ActiveMessageC;
-  Router.RoutingReceive -> RF231ActiveMessageC.Receive[23];
+  Router.RoutingReceive1 -> RF231ActiveMessageC.Receive[23];
+  Router.RoutingReceive2 -> RF212ActiveMessageC.Receive[23];
+  Router.RadioChannel1 -> RF231ActiveMessageC;
+  Router.RadioChannel2 -> RF212ActiveMessageC;
 
   components SerialLoggerC;
   Router.SerialLogger -> SerialLoggerC;

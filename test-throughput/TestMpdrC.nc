@@ -35,6 +35,9 @@ implementation {
   uint16_t receivedCount = 0;
   uint16_t totalCount = 0;
   uint16_t sendBusyCount = 0;
+  uint32_t timeElapsed;
+  uint8_t messageSize;
+  uint16_t throughput;
 
   enum {
     SEND_PATH_1,
@@ -64,11 +67,11 @@ implementation {
   am_addr_t m_source = 100;
   am_addr_t m_destination = 1;
   am_addr_t path1_len = 3;
-  am_addr_t path1_items[3] = {10, 63, 67};
+  am_addr_t path1_items[3] = {55, 65, 16};
   am_addr_t path2_len = 3;
-  am_addr_t path2_items[3] = {56, 65, 93};
+  am_addr_t path2_items[3] = {56, 62, 93};
 #elif NUM_HOPS == 1
-am_addr_t m_source = 58;
+am_addr_t m_source = 56;
 am_addr_t m_destination = 1;
 am_addr_t path1_len = 0;
 am_addr_t path1_items[0] = {};
@@ -128,9 +131,10 @@ am_addr_t path2_items[0] = {};
 
       case RESEND_PATHS:
         if (receivedCount == 0) {
-          call SerialLogger.log(LOG_RESEND_PATHS, 0);
-          call RootTimer.startOneShot(1000);
-          rootAction = SEND_PATH_1;
+          // call SerialLogger.log(LOG_RESEND_PATHS, 0);
+          // call RootTimer.startOneShot(1000);
+          //rootAction = SEND_PATH_1;
+          call SerialLogger.log(LOG_ROUTING_ERROR, 0);
         } else {
           call RootTimer.startOneShot(75000);
           rootAction = SEND_STATISTICS;
@@ -140,7 +144,10 @@ am_addr_t path2_items[0] = {};
       case SEND_STATISTICS:
         call SerialLogger.log(LOG_RECEIVED_COUNT, receivedCount);
         call SerialLogger.log(LOG_TOTAL_COUNT, totalCount);
+        call SerialLogger.log(LOG_MESSAGE_SIZE, messageSize);
+        call SerialLogger.log(LOG_THROUGHPUT, throughput);
       break;
+
     }
   }
 
@@ -159,6 +166,7 @@ am_addr_t path2_items[0] = {};
     msg = &msgBuffer;
     payload = (mpdr_test_msg_t*) call MpdrPacket.getPayload(msg, sizeof(mpdr_test_msg_t));
     payload->seqno = totalCount;
+    payload->data[0] = sizeof(message_t);
     call MpdrPacket.setPayloadLength(msg, sizeof(mpdr_test_msg_t));
     error = call MpdrSend.send(sendTo, msg, sizeof(mpdr_test_msg_t));
     if (error != SUCCESS) {
@@ -183,8 +191,14 @@ am_addr_t path2_items[0] = {};
 
   event message_t* MpdrReceive.receive(message_t* msg, void* payload, uint8_t len) {
     mpdr_test_msg_t* rcvdPayload = (mpdr_test_msg_t*) payload;
+    if (!call SendTimer.isRunning()) {
+      call SendTimer.startPeriodic(60000);
+    }
     receivedCount++;
     totalCount = rcvdPayload->seqno;
+    messageSize = rcvdPayload->data[0];
+    timeElapsed = call SendTimer.getNow();
+    throughput = (receivedCount * messageSize) / timeElapsed;
     call SerialLogger.log(LOG_MPDR_RECEIVE, rcvdPayload->seqno);
     return msg;
   }
