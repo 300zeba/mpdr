@@ -198,6 +198,11 @@ implementation {
     am_addr_t next_hop;
     uint8_t i;
     uint8_t channel;
+
+    call SerialLogger.log(LOG_RCV_ROUTING_LAST_HOP, rmsg->last_hop);
+    call SerialLogger.log(LOG_RCV_ROUTING_LAST_RADIO, rmsg->last_radio);
+    call SerialLogger.log(LOG_RCV_ROUTING_LAST_CHANNEL, rmsg->last_channel);
+
     if (rmsg->last_radio == 1) {
       channel = (rmsg->last_channel == 1) ? 26 : 15;
       call RadioChannel1.setChannel(channel);
@@ -307,7 +312,7 @@ implementation {
   }
 
   event void RadioChannel2.setChannelDone() {
-    uint8_t channel = call RadioChannel1.getChannel();
+    uint8_t channel = call RadioChannel2.getChannel();
     call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL, channel);
   }
 

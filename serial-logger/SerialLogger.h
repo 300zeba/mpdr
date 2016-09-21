@@ -26,6 +26,10 @@ enum {
   // Routing Engine
   LOG_SET_RADIO_1_CHANNEL,
   LOG_SET_RADIO_2_CHANNEL,
+  LOG_RCV_ROUTING_LAST_HOP,
+  LOG_RCV_ROUTING_LAST_RADIO,
+  LOG_RCV_ROUTING_LAST_CHANNEL,
+  
 };
 
 typedef nx_struct serial_log_message {

@@ -99,7 +99,7 @@ am_addr_t path2_items[0] = {};
     } else {
       call MpdrControl.start();
       call MpdrRouting.setNumPaths(numPaths);
-      call SerialLogger.log(LOG_NUM_PATHS, numPaths);
+      // call SerialLogger.log(LOG_NUM_PATHS, numPaths);
       if (TOS_NODE_ID == 1) {
         call RootTimer.startOneShot(5000);
         rootAction = SEND_PATH_1;
