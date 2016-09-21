@@ -205,9 +205,11 @@ implementation {
 
     if (rmsg->last_radio == 1) {
       channel = (rmsg->last_channel == 1) ? 26 : 15;
+      call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL, channel);
       call RadioChannel1.setChannel(channel);
     } else {
       channel = (rmsg->last_channel == 1) ? 6 : 10;
+      call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL, channel);
       call RadioChannel2.setChannel(channel);
     }
     if (rmsg->source == TOS_NODE_ID) {
@@ -288,9 +290,11 @@ implementation {
     mpdr_routing_msg_t* rmsg = call RoutingSend1.getPayload(msg, sizeof(mpdr_routing_msg_t));
     uint8_t channel;
     if (error != SUCCESS) {
+      call SerialLogger.log(LOG_SEND_1_ERROR, error);
       call RoutingSend1.send(rmsg->next_hop, msg, sizeof(mpdr_routing_msg_t));
     } else {
       channel = (rmsg->last_channel == 1) ? 26 : 15;
+      call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL, channel);
       call RadioChannel1.setChannel(channel);
     }
   }
@@ -299,21 +303,23 @@ implementation {
     mpdr_routing_msg_t* rmsg = call RoutingSend2.getPayload(msg, sizeof(mpdr_routing_msg_t));
     uint8_t channel;
     if (error != SUCCESS) {
+      call SerialLogger.log(LOG_SEND_2_ERROR, error);
       call RoutingSend2.send(rmsg->next_hop, msg, sizeof(mpdr_routing_msg_t));
     } else {
       channel = (rmsg->last_channel == 1) ? 6 : 10;
+      call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL, channel);
       call RadioChannel2.setChannel(channel);
     }
   }
 
   event void RadioChannel1.setChannelDone() {
     uint8_t channel = call RadioChannel1.getChannel();
-    call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL, channel);
+    call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL_OK, channel);
   }
 
   event void RadioChannel2.setChannelDone() {
     uint8_t channel = call RadioChannel2.getChannel();
-    call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL, channel);
+    call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL_OK, channel);
   }
 
 }
