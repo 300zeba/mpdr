@@ -50,42 +50,19 @@ implementation {
   uint8_t rootAction;
   uint8_t numPaths = 2;
 
-#if NUM_HOPS == 6
-  am_addr_t m_source = 100;
-  am_addr_t m_destination = 1;
-  am_addr_t path1_len = 5;
-  am_addr_t path1_items[5] = {59, 61, 13, 44, 18};
-  am_addr_t path2_len = 5;
-  am_addr_t path2_items[5] = {60, 62, 63, 69, 25};
-#elif NUM_HOPS == 5
-  am_addr_t m_source = 18;
-  am_addr_t m_destination = 1;
-  am_addr_t path1_len = 4;
-  am_addr_t path1_items[4] = {6, 35, 12, 45};
-  am_addr_t path2_len = 4;
-  am_addr_t path2_items[4] = {59, 61, 13, 44};
-#elif NUM_HOPS == 4
-  am_addr_t m_source = 100;
-  am_addr_t m_destination = 1;
-  am_addr_t path1_len = 3;
-  am_addr_t path1_items[3] = {55, 65, 16};
-  am_addr_t path2_len = 3;
-  am_addr_t path2_items[3] = {56, 62, 93};
-#elif NUM_HOPS == 1
-  am_addr_t m_source = 56;
-  am_addr_t m_destination = 1;
-  am_addr_t path1_len = 0;
-  am_addr_t path1_items[0] = {};
-  am_addr_t path2_len = 0;
-  am_addr_t path2_items[0] = {};
-#elif NUM_HOPS == 3
-  am_addr_t m_source = 79;
-  am_addr_t m_destination = 2;
-  am_addr_t path1_len = 2;
-  am_addr_t path1_items[2] = {56, 85};
-  am_addr_t path2_len = 0;
-  am_addr_t path2_items[2] = {7, 29};
-#endif
+  uint8_t destinationNode = 2;
+  uint8_t sourceNode = 79;
+  uint8_t sourceRoutes[2][3] = {
+    {85, 1, 2},
+    {29, 2, 1}
+  };
+  uint8_t relayNodes[4] = {56, 85, 7, 29};
+  uint8_t relayRoutes[4][3] = {
+    {2, 1, 1},
+    {56, 2, 1},
+    {2, 2, 2},
+    {7, 1, 2}
+  };
 
   event void Boot.booted() {
     call SerialControl.start();
