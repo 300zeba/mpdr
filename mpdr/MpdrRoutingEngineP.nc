@@ -148,12 +148,14 @@ implementation {
     return addFwdRoute(source, destination, next_hop, radio, channel);
   }
 
-  command error_t MpdrRouting.sendRouteMsg(am_addr_t source, am_addr_t destination,
-                                                uint8_t path_id, uint8_t size,
-                                                am_addr_t* items) {
+  command error_t MpdrRouting.sendRouteMsg(am_addr_t source,
+                                           am_addr_t destination,
+                                           uint8_t path_id, uint8_t size,
+                                           am_addr_t* items) {
     uint8_t i;
     am_addr_t next_hop;
-    mpdr_routing_msg_t* rmsg = call RoutingSend1.getPayload(&msgBuffer, sizeof(mpdr_routing_msg_t));
+    mpdr_routing_msg_t* rmsg = call RoutingSend1.getPayload(&msgBuffer,
+                                                    sizeof(mpdr_routing_msg_t));
     error_t result;
     rmsg->source = source;
     rmsg->destination = destination;

@@ -1,7 +1,8 @@
 #include "TestMpdr.h"
 #include "../serial-logger/SerialLogger.h"
 
-#define NUM_HOPS 4
+#define ROOT_NODE 2
+#define NUM_HOPS 3
 
 module TestMpdrC {
   uses {
@@ -71,12 +72,19 @@ implementation {
   am_addr_t path2_len = 3;
   am_addr_t path2_items[3] = {56, 62, 93};
 #elif NUM_HOPS == 1
-am_addr_t m_source = 56;
-am_addr_t m_destination = 1;
-am_addr_t path1_len = 0;
-am_addr_t path1_items[0] = {};
-am_addr_t path2_len = 0;
-am_addr_t path2_items[0] = {};
+  am_addr_t m_source = 56;
+  am_addr_t m_destination = 1;
+  am_addr_t path1_len = 0;
+  am_addr_t path1_items[0] = {};
+  am_addr_t path2_len = 0;
+  am_addr_t path2_items[0] = {};
+#elif NUM_HOPS == 3
+  am_addr_t m_source = 79;
+  am_addr_t m_destination = 2;
+  am_addr_t path1_len = 2;
+  am_addr_t path1_items[2] = {56, 85};
+  am_addr_t path2_len = 0;
+  am_addr_t path2_items[2] = {7, 29};
 #endif
 
   event void Boot.booted() {
@@ -100,7 +108,7 @@ am_addr_t path2_items[0] = {};
       call MpdrControl.start();
       call MpdrRouting.setNumPaths(numPaths);
       // call SerialLogger.log(LOG_NUM_PATHS, numPaths);
-      if (TOS_NODE_ID == 1) {
+      if (TOS_NODE_ID == ROOT_NODE) {
         call RootTimer.startOneShot(5000);
         rootAction = SEND_PATH_1;
       }
