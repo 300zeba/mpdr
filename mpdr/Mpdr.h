@@ -24,13 +24,6 @@ typedef nx_struct mpdr_msg_hdr {
   nx_am_addr_t next_hop;
 } mpdr_msg_hdr_t;
 
-typedef nx_struct mpdr_msg {
-  nx_am_addr_t source;
-  nx_am_addr_t destination;
-  nx_am_addr_t next_hop;
-  nx_uint16_t data;
-} mpdr_msg_t;
-
 typedef nx_struct mpdr_routing_msg {
   nx_am_addr_t source;
   nx_am_addr_t destination;

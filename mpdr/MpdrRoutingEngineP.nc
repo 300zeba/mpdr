@@ -148,6 +148,42 @@ implementation {
     return addFwdRoute(source, destination, next_hop, radio, channel);
   }
 
+  command error_t MpdrRouting.addSendRoute(am_addr_t source,
+                                           am_addr_t destination,
+                                           am_addr_t next_hop, uint8_t radio,
+                                           uint8_t channel) {
+    return addSendRoute(source, destination, next_hop, radio, channel);
+  }
+
+  command error_t MpdrRouting.setRadioChannel(uint8_t radio, uint8_t channel) {
+    uint8_t channels[2][2] = {{26, 15}, {6, 10}};
+    uint8_t chosen = channels[radio-1][channel-1];
+    error_t result;
+    if (radio == 1) {
+      call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL, chosen);
+      result = call RadioChannel1.setChannel(chosen);
+      if (result == EALREADY) {
+        call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL_OK, chosen);
+        return SUCCESS;
+      }
+      if (result != SUCCESS) {
+        call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL_ERROR, result);
+      }
+      return result;
+    } else {
+      call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL, chosen);
+      result = call RadioChannel2.setChannel(chosen);
+      if (result == EALREADY) {
+        call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL_OK, chosen);
+        return SUCCESS;
+      }
+      if (result != SUCCESS) {
+        call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL_ERROR, result);
+      }
+      return result;
+    }
+  }
+
   command error_t MpdrRouting.sendRouteMsg(am_addr_t source,
                                            am_addr_t destination,
                                            uint8_t path_id, uint8_t size,

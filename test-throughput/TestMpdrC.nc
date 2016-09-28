@@ -56,6 +56,7 @@ implementation {
     {85, 1, 2},
     {29, 2, 1}
   };
+  uint8_t relayLength = 4;
   uint8_t relayNodes[4] = {56, 85, 7, 29};
   uint8_t relayRoutes[4][3] = {
     {2, 1, 1},
@@ -63,6 +64,36 @@ implementation {
     {2, 2, 2},
     {7, 1, 2}
   };
+
+  uint8_t getRelayIndex(uint8_t id) {
+    uint8_t i;
+    for (i = 0; i < relayLength; i++) {
+      if (id == relayNodes[i]) {
+        return i;
+      }
+    }
+    return relayLength;
+  }
+
+  uint8_t getDestinationRadio1Channel() {
+    uint8_t i;
+    for (i = 0; i < relayLength; i++) {
+      if (relayRoutes[i][0] == destinationNode && relayRoutes[i][1] == 1) {
+        return relayRoutes[i][2];
+      }
+    }
+    return 0;
+  }
+
+  uint8_t getRelayRadioChannel(uint8_t radio) {
+    uint8_t i;
+    for (i = 0; i < relayLength; i++) {
+      if (relayRoutes[i][0] == TOS_NODE_ID && relayRoutes[i][1] == radio) {
+        return relayRoutes[i][2];
+      }
+    }
+    return 0;
+  }
 
   event void Boot.booted() {
     call SerialControl.start();
@@ -79,69 +110,63 @@ implementation {
   event void SerialControl.stopDone(error_t err) {}
 
   event void RadiosControl.startDone(error_t error) {
+    uint8_t relayIndex;
+    uint8_t radio;
+    uint8_t channel1;
+    uint8_t channel2;
     if (error != SUCCESS) {
       call RadiosControl.start();
     } else {
       call MpdrControl.start();
       call MpdrRouting.setNumPaths(numPaths);
-      // call SerialLogger.log(LOG_NUM_PATHS, numPaths);
-      if (TOS_NODE_ID == ROOT_NODE) {
-        call RootTimer.startOneShot(5000);
-        rootAction = SEND_PATH_1;
+      if (TOS_NODE_ID == destinationNode) {
+        channel1 = getDestinationRadio1Channel();
+        channel2 = (channel1 == 1)? 2: 1;
+        call MpdrRouting.setRadioChannel(1, channel1);
+        call MpdrRouting.setRadioChannel(2, channel2);
+        call RootTimer.startOneShot(60000);
+      } else if (TOS_NODE_ID == sourceNode) {
+        call MpdrRouting.addSendRoute(sourceNode, destinationNode,
+                                      sourceRoutes[0][0], sourceRoutes[0][1],
+                                      sourceRoutes[0][2]);
+        call MpdrRouting.addSendRoute(sourceNode, destinationNode,
+                                      sourceRoutes[1][0], sourceRoutes[1][1],
+                                      sourceRoutes[1][2]);
+        call MpdrRouting.setRadioChannel(sourceRoutes[0][1],
+                                         sourceRoutes[0][2]);
+        call MpdrRouting.setRadioChannel(sourceRoutes[1][1],
+                                         sourceRoutes[1][2]);
+        call SendTimer.startOneShot(10000);
+      } else {
+        relayIndex = getRelayIndex(TOS_NODE_ID);
+        if (relayIndex < relayLength) {
+          call MpdrRouting.addRoutingItem(sourceNode, destinationNode,
+                                          relayRoutes[relayIndex][0],
+                                          relayRoutes[relayIndex][1],
+                                          relayRoutes[relayIndex][2]);
+          call MpdrRouting.setRadioChannel(relayRoutes[relayIndex][1],
+                                           relayRoutes[relayIndex][2]);
+          radio = (relayRoutes[relayIndex][0] == 1)? 2: 1;
+          channel2 = getRelayRadioChannel(radio);
+          call MpdrRouting.setRadioChannel(radio, channel2);
+        }
       }
     }
-
   }
 
   event void RadiosControl.stopDone(error_t error) {}
 
   event void RootTimer.fired() {
-    call SerialLogger.log(LOG_ROOT_ACTION, rootAction);
-    switch (rootAction) {
-      case SEND_PATH_1:
-        call MpdrRouting.sendRouteMsg(m_source, m_destination, 1, path1_len, (am_addr_t*) &path1_items);
-        call RootTimer.startOneShot(5000);
-        if (numPaths == 2) {
-          rootAction = SEND_PATH_2;
-        } else {
-          rootAction = RESEND_PATHS;
-        }
-      break;
-
-      case SEND_PATH_2:
-        call MpdrRouting.sendRouteMsg(m_source, m_destination, 2, path2_len, (am_addr_t*) &path2_items);
-        call RootTimer.startOneShot(5000);
-        rootAction = RESEND_PATHS;
-      break;
-
-      case RESEND_PATHS:
-        if (receivedCount == 0) {
-          // call SerialLogger.log(LOG_RESEND_PATHS, 0);
-          // call RootTimer.startOneShot(1000);
-          //rootAction = SEND_PATH_1;
-          call SerialLogger.log(LOG_ROUTING_ERROR, 0);
-        } else {
-          call RootTimer.startOneShot(75000);
-          rootAction = SEND_STATISTICS;
-        }
-      break;
-
-      case SEND_STATISTICS:
-        call SerialLogger.log(LOG_RECEIVED_COUNT, receivedCount);
-        call SerialLogger.log(LOG_TOTAL_COUNT, totalCount);
-        call SerialLogger.log(LOG_MESSAGE_SIZE, messageSize);
-        call SerialLogger.log(LOG_THROUGHPUT, throughput);
-      break;
-
-    }
+      call SerialLogger.log(LOG_RECEIVED_COUNT, receivedCount);
+      call SerialLogger.log(LOG_TOTAL_COUNT, totalCount);
+      //call SerialLogger.log(LOG_MESSAGE_SIZE, messageSize);
+      //call SerialLogger.log(LOG_THROUGHPUT, throughput);
   }
 
   event void NodeTimer.fired() {
     transmitting = FALSE;
+    call SerialLogger.log(LOG_STOP_SENDING, 0);
     call SerialLogger.log(LOG_TOTAL_SENT, totalCount);
-  }
-
-  event void SendTimer.fired() {
   }
 
   void sendMessage() {
@@ -149,7 +174,8 @@ implementation {
     mpdr_test_msg_t* payload;
     error_t error;
     msg = &msgBuffer;
-    payload = (mpdr_test_msg_t*) call MpdrPacket.getPayload(msg, sizeof(mpdr_test_msg_t));
+    payload = (mpdr_test_msg_t*) call MpdrPacket.getPayload(msg,
+                                                       sizeof(mpdr_test_msg_t));
     payload->seqno = totalCount;
     payload->data[0] = sizeof(message_t);
     call MpdrPacket.setPayloadLength(msg, sizeof(mpdr_test_msg_t));
@@ -159,10 +185,21 @@ implementation {
     }
   }
 
+  event void SendTimer.fired() {
+    call SerialLogger.log(LOG_START_SENDING, 0);
+    sendTo = destinationNode;
+    transmitting = TRUE;
+    sendMessage();
+    call NodeTimer.startOneShot(30000);
+  }
+
   event void MpdrSend.sendDone(message_t* msg, error_t error) {
+    mpdr_test_msg_t* payload;
     if (error == SUCCESS) {
       totalCount++;
-      call SerialLogger.log(LOG_MPDR_SEND_DONE, totalCount);
+      payload = (mpdr_test_msg_t*) call MpdrPacket.getPayload(msg,
+                                                       sizeof(mpdr_test_msg_t));
+      call SerialLogger.log(LOG_MPDR_SEND_DONE, payload->seqno);
     } else {
       call SerialLogger.log(LOG_ERROR_MPDR_SEND_DONE, error);
     }
@@ -174,25 +211,17 @@ implementation {
     }
   }
 
-  event message_t* MpdrReceive.receive(message_t* msg, void* payload, uint8_t len) {
+  event message_t* MpdrReceive.receive(message_t* msg, void* payload,
+                                       uint8_t len) {
     mpdr_test_msg_t* rcvdPayload = (mpdr_test_msg_t*) payload;
-    if (!call SendTimer.isRunning()) {
-      call SendTimer.startPeriodic(60000);
-    }
     receivedCount++;
     totalCount = rcvdPayload->seqno;
-    messageSize = rcvdPayload->data[0];
-    timeElapsed = call SendTimer.getNow();
-    throughput = (receivedCount * messageSize) / timeElapsed;
+    //messageSize = rcvdPayload->data[0];
+    //timeElapsed = call SendTimer.getNow();
+    //throughput = (receivedCount * messageSize) / timeElapsed;
     call SerialLogger.log(LOG_MPDR_RECEIVE, rcvdPayload->seqno);
     return msg;
   }
 
-  event void MpdrRouting.pathsReady(am_addr_t destination) {
-    call SerialLogger.log(LOG_MPDR_PATHS_READY, destination);
-    sendTo = destination;
-    transmitting = TRUE;
-    sendMessage();
-    call NodeTimer.startOneShot(60000);
-  }
+  event void MpdrRouting.pathsReady(am_addr_t destination) {}
 }

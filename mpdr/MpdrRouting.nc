@@ -6,6 +6,12 @@ interface MpdrRouting {
                                  am_addr_t next_hop, uint8_t radio,
                                  uint8_t channel);
 
+  command error_t addSendRoute(am_addr_t source, am_addr_t destination,
+                               am_addr_t next_hop, uint8_t radio,
+                               uint8_t channel);
+
+  command error_t setRadioChannel(uint8_t radio, uint8_t channel);
+
   command error_t sendRouteMsg(am_addr_t source, am_addr_t destination,
                                uint8_t path_id, uint8_t size, am_addr_t* items);
 
