@@ -61,6 +61,7 @@ implementation {
       msg_hdr->destination = addr;
       msg_hdr->next_hop = next1;
       if (!radio1Busy) {
+        call SerialLogger.log(LOG_SENDING_RADIO_1_TO, next1);
         result = call Radio1Send.send(next1, msgBuffer,
                                       len + sizeof(mpdr_msg_hdr_t));
         if (result == SUCCESS) {
@@ -69,6 +70,7 @@ implementation {
         }
       } else {
         result = call Radio1Queue.enqueue(msgBuffer);
+        call SerialLogger.log(LOG_ENQUEUEING_RADIO_1, result);
       }
       if (call Routing.getNumPaths() == 2) {
         radio = 2;
@@ -79,6 +81,7 @@ implementation {
       msg_hdr->destination = addr;
       msg_hdr->next_hop = next2;
       if (!radio2Busy) {
+        call SerialLogger.log(LOG_SENDING_RADIO_2_TO, next2);
         result = call Radio2Send.send(next2, msgBuffer, len + sizeof(mpdr_msg_hdr_t));
         if (result == SUCCESS) {
           radio2Busy = TRUE;
@@ -86,6 +89,7 @@ implementation {
         }
       } else {
         result = call Radio2Queue.enqueue(msgBuffer);
+        call SerialLogger.log(LOG_ENQUEUEING_RADIO_2, result);
       }
       if (call Routing.getNumPaths() == 2) {
         radio = 1;

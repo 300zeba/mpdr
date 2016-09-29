@@ -59,14 +59,13 @@ implementation {
     found = 0;
     for (i = 0; i < sendTable.size; i++) {
       if (sendTable.items[i].destination == destination) {
-        if (found == 0) {
+        if (sendTable.items[i].radio == 1) {
           *addr1 = sendTable.items[i].next_hop;
-          found++;
-          if (numRoutes == 1) {
-            return SUCCESS;
-          }
         } else {
           *addr2 = sendTable.items[i].next_hop;
+        }
+        found++;
+        if (numRoutes == found) {
           return SUCCESS;
         }
       }
@@ -159,29 +158,47 @@ implementation {
     uint8_t channels[2][2] = {{26, 15}, {6, 10}};
     uint8_t chosen = channels[radio-1][channel-1];
     error_t result;
+    uint8_t attempts = 0;
+    if (radio != 1 && radio != 2) {
+      call SerialLogger.log(LOG_RADIO_NUMBER_ERROR, radio);
+      return FAIL;
+    }
+    if (channel != 1 && channel != 2) {
+      call SerialLogger.log(LOG_CHANNEL_NUMBER_ERROR, channel);
+      return FAIL;
+    }
     if (radio == 1) {
       call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL, chosen);
-      result = call RadioChannel1.setChannel(chosen);
-      if (result == EALREADY) {
-        call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL_OK, chosen);
-        return SUCCESS;
+      result = FAIL;
+      while (result != SUCCESS && attempts < 300) {
+        result = call RadioChannel1.setChannel(chosen);
+        if (result == EALREADY) {
+          call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL_OK, chosen);
+          result = SUCCESS;
+        }
+        if (result != SUCCESS && attempts < 3) {
+          call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL_ERROR, result);
+        }
+        attempts++;
       }
-      if (result != SUCCESS) {
-        call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL_ERROR, result);
-      }
-      return result;
     } else {
       call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL, chosen);
-      result = call RadioChannel2.setChannel(chosen);
-      if (result == EALREADY) {
-        call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL_OK, chosen);
-        return SUCCESS;
+      result = FAIL;
+      while (result != SUCCESS && attempts < 100) {
+        result = call RadioChannel2.setChannel(chosen);
+        if (result == EALREADY) {
+          call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL_OK, chosen);
+          result = SUCCESS;
+        }
+        if (result != SUCCESS && attempts < 300) {
+          call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL_ERROR, result);
+        }
       }
-      if (result != SUCCESS) {
-        call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL_ERROR, result);
-      }
-      return result;
     }
+    if (attempts >= 300) {
+      call SerialLogger.log(LOG_CHANGE_CHANNEL_ATTEMPTS, attempts);
+    }
+    return result;
   }
 
   command error_t MpdrRouting.sendRouteMsg(am_addr_t source,

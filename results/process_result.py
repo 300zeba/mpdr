@@ -46,9 +46,13 @@ logCodesFile = open(LOG_CODES_FILE, "r")
 logCodesText = logCodesFile.read()
 p = re.compile(r"LOG\_(.*),")
 logCodes = p.findall(logCodesText)
+lastNode = 0
 for logEntry in logEntries:
     logEntryText = ""
     # logEntryText += str(logEntry[0]) + "\t"
+    if logEntry[1] != lastNode:
+        lastNode = logEntry[1]
+        logEntryText += "\n"
     logEntryText += str(logEntry[1]) + "\t"
     if logEntry[2] < len(logCodes):
         logEntryText += logCodes[logEntry[2]] + " "

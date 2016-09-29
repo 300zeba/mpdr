@@ -8,6 +8,7 @@ module TestMpdrC {
   uses {
     interface Boot;
 
+    interface Timer<TMilli> as InitTimer;
     interface Timer<TMilli> as NodeTimer;
     interface Timer<TMilli> as RootTimer;
     interface Timer<TMilli> as SendTimer;
@@ -50,19 +51,21 @@ implementation {
   uint8_t rootAction;
   uint8_t numPaths = 2;
 
-  uint8_t destinationNode = 2;
-  uint8_t sourceNode = 79;
+  uint8_t destinationNode = 1;
+  uint8_t sourceNode = 100;
   uint8_t sourceRoutes[2][3] = {
-    {85, 1, 2},
-    {29, 2, 1}
+    {16, 2, 2},
+    {93, 1, 1}
   };
-  uint8_t relayLength = 4;
-  uint8_t relayNodes[4] = {56, 85, 7, 29};
-  uint8_t relayRoutes[4][3] = {
-    {2, 1, 1},
-    {56, 2, 1},
-    {2, 2, 2},
-    {7, 1, 2}
+  uint8_t relayLength = 6;
+  uint8_t relayNodes[6] = {55, 65, 16, 56, 62, 93};
+  uint8_t relayRoutes[6][3] = {
+    {1, 1, 1},
+    {55, 2, 1},
+    {65, 1, 2},
+    {1, 2, 2},
+    {56, 1, 2},
+    {62, 2, 1}
   };
 
   uint8_t getRelayIndex(uint8_t id) {
@@ -92,6 +95,11 @@ implementation {
         return relayRoutes[i][2];
       }
     }
+    for (i = 0; i < 2; i++) {
+      if (sourceRoutes[i][0] == TOS_NODE_ID && sourceRoutes[i][1] == radio) {
+        return sourceRoutes[i][2];
+      }
+    }
     return 0;
   }
 
@@ -110,51 +118,58 @@ implementation {
   event void SerialControl.stopDone(error_t err) {}
 
   event void RadiosControl.startDone(error_t error) {
-    uint8_t relayIndex;
-    uint8_t radio;
-    uint8_t channel1;
-    uint8_t channel2;
     if (error != SUCCESS) {
       call RadiosControl.start();
     } else {
       call MpdrControl.start();
       call MpdrRouting.setNumPaths(numPaths);
-      if (TOS_NODE_ID == destinationNode) {
-        channel1 = getDestinationRadio1Channel();
-        channel2 = (channel1 == 1)? 2: 1;
-        call MpdrRouting.setRadioChannel(1, channel1);
-        call MpdrRouting.setRadioChannel(2, channel2);
-        call RootTimer.startOneShot(60000);
-      } else if (TOS_NODE_ID == sourceNode) {
-        call MpdrRouting.addSendRoute(sourceNode, destinationNode,
-                                      sourceRoutes[0][0], sourceRoutes[0][1],
-                                      sourceRoutes[0][2]);
-        call MpdrRouting.addSendRoute(sourceNode, destinationNode,
-                                      sourceRoutes[1][0], sourceRoutes[1][1],
-                                      sourceRoutes[1][2]);
-        call MpdrRouting.setRadioChannel(sourceRoutes[0][1],
-                                         sourceRoutes[0][2]);
-        call MpdrRouting.setRadioChannel(sourceRoutes[1][1],
-                                         sourceRoutes[1][2]);
-        call SendTimer.startOneShot(10000);
-      } else {
-        relayIndex = getRelayIndex(TOS_NODE_ID);
-        if (relayIndex < relayLength) {
-          call MpdrRouting.addRoutingItem(sourceNode, destinationNode,
-                                          relayRoutes[relayIndex][0],
-                                          relayRoutes[relayIndex][1],
-                                          relayRoutes[relayIndex][2]);
-          call MpdrRouting.setRadioChannel(relayRoutes[relayIndex][1],
-                                           relayRoutes[relayIndex][2]);
-          radio = (relayRoutes[relayIndex][0] == 1)? 2: 1;
-          channel2 = getRelayRadioChannel(radio);
-          call MpdrRouting.setRadioChannel(radio, channel2);
-        }
-      }
+      call InitTimer.startOneShot(10000);
     }
   }
 
   event void RadiosControl.stopDone(error_t error) {}
+
+  event void InitTimer.fired() {
+    uint8_t relayIndex;
+    uint8_t radio;
+    uint8_t channel1;
+    uint8_t channel2;
+    if (TOS_NODE_ID == destinationNode) {
+      channel1 = getDestinationRadio1Channel();
+      channel2 = (channel1 == 1)? 2: 1;
+      call MpdrRouting.setRadioChannel(1, channel1);
+      call MpdrRouting.setRadioChannel(2, channel2);
+      call RootTimer.startOneShot(60000);
+    } else if (TOS_NODE_ID == sourceNode) {
+      call MpdrRouting.addSendRoute(sourceNode, destinationNode,
+                                    sourceRoutes[0][0], sourceRoutes[0][1],
+                                    sourceRoutes[0][2]);
+      call MpdrRouting.addSendRoute(sourceNode, destinationNode,
+                                    sourceRoutes[1][0], sourceRoutes[1][1],
+                                    sourceRoutes[1][2]);
+      call MpdrRouting.setRadioChannel(sourceRoutes[0][1],
+                                       sourceRoutes[0][2]);
+      call MpdrRouting.setRadioChannel(sourceRoutes[1][1],
+                                       sourceRoutes[1][2]);
+      call SendTimer.startOneShot(10000);
+    } else {
+      relayIndex = getRelayIndex(TOS_NODE_ID);
+      if (relayIndex < relayLength) {
+        call MpdrRouting.addRoutingItem(sourceNode, destinationNode,
+                                        relayRoutes[relayIndex][0],
+                                        relayRoutes[relayIndex][1],
+                                        relayRoutes[relayIndex][2]);
+        call MpdrRouting.setRadioChannel(relayRoutes[relayIndex][1],
+                                         relayRoutes[relayIndex][2]);
+        radio = (relayRoutes[relayIndex][1] == 1)? 2: 1;
+        channel2 = getRelayRadioChannel(radio);
+        if (channel2 == 0) {
+          call SerialLogger.log(LOG_GET_RELAY_CHANNEL_ERROR, channel2);
+        }
+        call MpdrRouting.setRadioChannel(radio, channel2);
+      }
+    }
+  }
 
   event void RootTimer.fired() {
       call SerialLogger.log(LOG_RECEIVED_COUNT, receivedCount);
@@ -165,7 +180,6 @@ implementation {
 
   event void NodeTimer.fired() {
     transmitting = FALSE;
-    call SerialLogger.log(LOG_STOP_SENDING, 0);
     call SerialLogger.log(LOG_TOTAL_SENT, totalCount);
   }
 
@@ -203,7 +217,7 @@ implementation {
     } else {
       call SerialLogger.log(LOG_ERROR_MPDR_SEND_DONE, error);
     }
-    if (totalCount > 100) {
+    if (totalCount > 99) {
       transmitting = FALSE;
     }
     if (transmitting) {
