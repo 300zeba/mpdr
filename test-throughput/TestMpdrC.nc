@@ -184,6 +184,7 @@ implementation {
   }
 
   void sendMessage() {
+    uint8_t i;
     message_t* msg;
     mpdr_test_msg_t* payload;
     error_t error;
@@ -191,7 +192,9 @@ implementation {
     payload = (mpdr_test_msg_t*) call MpdrPacket.getPayload(msg,
                                                        sizeof(mpdr_test_msg_t));
     payload->seqno = totalCount;
-    payload->data[0] = sizeof(message_t);
+    for (i = 0; i < MSG_SIZE; i++) {
+      payload->data[i] = i;
+    }
     call MpdrPacket.setPayloadLength(msg, sizeof(mpdr_test_msg_t));
     error = call MpdrSend.send(sendTo, msg, sizeof(mpdr_test_msg_t));
     if (error != SUCCESS) {
@@ -227,13 +230,17 @@ implementation {
 
   event message_t* MpdrReceive.receive(message_t* msg, void* payload,
                                        uint8_t len) {
+    uint8_t i;
     mpdr_test_msg_t* rcvdPayload = (mpdr_test_msg_t*) payload;
     receivedCount++;
     totalCount = rcvdPayload->seqno;
-    //messageSize = rcvdPayload->data[0];
-    //timeElapsed = call SendTimer.getNow();
-    //throughput = (receivedCount * messageSize) / timeElapsed;
     call SerialLogger.log(LOG_MPDR_RECEIVE, rcvdPayload->seqno);
+    for (i = 0; i < MSG_SIZE; i++) {
+      if (rcvdPayload->data[i] != i) {
+        call SerialLogger.log(LOG_MSG_ERROR_I, i);
+        call SerialLogger.log(LOG_MSG_ERROR_DATA, rcvdPayload->data[i]);
+      }
+    }
     return msg;
   }
 

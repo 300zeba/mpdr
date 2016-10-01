@@ -2,7 +2,7 @@ import subprocess
 import glob
 import re
 
-LOG_CODES_FILE = "../mpdr/serial-logger/SerialLogger.h"
+LOG_CODES_FILE = "../serial-logger/SerialLogger.h"
 # LOG_CODES_FILE = "../test-two-radios/TestNetwork.h"
 
 def execute(command):

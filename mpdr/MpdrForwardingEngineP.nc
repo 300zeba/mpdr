@@ -119,9 +119,11 @@ implementation {
     mpdr_msg_hdr_t* smsg;
     am_addr_t next_hop;
     error_t result;
-    uint16_t* seqno = (uint16_t*) (payload + sizeof(mpdr_msg_hdr_t));
+    // uint16_t* seqno = (uint16_t*) (payload + sizeof(mpdr_msg_hdr_t));
 
-    call SerialLogger.log(LOG_RECEIVED_RADIO_1_SEQNO, seqno[0]);
+    call SerialLogger.log(LOG_RECEIVED_RADIO_1_SOURCE, rmsg->source);
+    call SerialLogger.log(LOG_RECEIVED_RADIO_1_DESTINATION, rmsg->destination);
+    call SerialLogger.log(LOG_RECEIVED_RADIO_1_NEXT_HOP, rmsg->next_hop);
 
     if (rmsg->destination != TOS_NODE_ID) {
       msgBuffer = call MessagePool.get();
@@ -138,8 +140,7 @@ implementation {
       smsg->destination = rmsg->destination;
       smsg->next_hop = next_hop;
       if (!radio2Busy) {
-        result = call Radio2Send.send(next_hop, msgBuffer,
-                                      len + sizeof(mpdr_msg_hdr_t));
+        result = call Radio2Send.send(next_hop, msgBuffer, len);
         call SerialLogger.log(LOG_RADIO_2_SEND_RESULT, result);
         if (result == SUCCESS) {
           radio2Busy = TRUE;
@@ -164,9 +165,11 @@ implementation {
     mpdr_msg_hdr_t* smsg;
     am_addr_t next_hop;
     error_t result;
-    uint16_t* seqno = (uint16_t*) (payload + sizeof(mpdr_msg_hdr_t));
+    // uint16_t* seqno = (uint16_t*) (payload + sizeof(mpdr_msg_hdr_t));
 
-    call SerialLogger.log(LOG_RECEIVED_RADIO_2_SEQNO, seqno[0]);
+    call SerialLogger.log(LOG_RECEIVED_RADIO_2_SOURCE, rmsg->source);
+    call SerialLogger.log(LOG_RECEIVED_RADIO_2_DESTINATION, rmsg->destination);
+    call SerialLogger.log(LOG_RECEIVED_RADIO_2_NEXT_HOP, rmsg->next_hop);
 
     if (rmsg->destination != TOS_NODE_ID) {
       msgBuffer = call MessagePool.get();
@@ -183,8 +186,7 @@ implementation {
       smsg->destination = rmsg->destination;
       smsg->next_hop = next_hop;
       if (!radio2Busy) {
-        result = call Radio1Send.send(next_hop, msgBuffer,
-                                      len + sizeof(mpdr_msg_hdr_t));
+        result = call Radio1Send.send(next_hop, msgBuffer, len);
         call SerialLogger.log(LOG_RADIO_1_SEND_RESULT, result);
         if (result == SUCCESS) {
           radio1Busy = TRUE;
