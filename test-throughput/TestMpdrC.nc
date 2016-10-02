@@ -139,7 +139,7 @@ implementation {
       channel2 = (channel1 == 1)? 2: 1;
       call MpdrRouting.setRadioChannel(1, channel1);
       call MpdrRouting.setRadioChannel(2, channel2);
-      call RootTimer.startOneShot(60000);
+      // call RootTimer.startOneShot(60000);
     } else if (TOS_NODE_ID == sourceNode) {
       call MpdrRouting.addSendRoute(sourceNode, destinationNode,
                                     sourceRoutes[0][0], sourceRoutes[0][1],
@@ -203,11 +203,18 @@ implementation {
   }
 
   event void SendTimer.fired() {
-    call SerialLogger.log(LOG_START_SENDING, 0);
-    sendTo = destinationNode;
-    transmitting = TRUE;
-    sendMessage();
-    call NodeTimer.startOneShot(30000);
+    if (call SendTimer.isOneShot()) {
+      call SerialLogger.log(LOG_START_SENDING, 0);
+      sendTo = destinationNode;
+      transmitting = TRUE;
+      call SendTimer.startPeriodic(500);
+    }
+    if (totalCount > 99) {
+      transmitting = FALSE;
+    }
+    if (transmitting) {
+      sendMessage();
+    }
   }
 
   event void MpdrSend.sendDone(message_t* msg, error_t error) {
@@ -219,12 +226,6 @@ implementation {
       call SerialLogger.log(LOG_MPDR_SEND_DONE, payload->seqno);
     } else {
       call SerialLogger.log(LOG_ERROR_MPDR_SEND_DONE, error);
-    }
-    if (totalCount > 99) {
-      transmitting = FALSE;
-    }
-    if (transmitting) {
-      sendMessage();
     }
   }
 
