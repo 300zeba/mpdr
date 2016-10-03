@@ -51,24 +51,24 @@ implementation {
   uint8_t rootAction;
   uint8_t numPaths = 2;
 
-  /*uint8_t destinationNode = 1;
-  uint8_t sourceNode = 100;
+  uint8_t destinationNode = 100;
+  uint8_t sourceNode = 1;
   uint8_t sourceRoutes[2][3] = {
-    {16, 2, 2},
-    {93, 1, 1}
+    {55, 1, 1},
+    {56, 2, 2}
   };
   uint8_t relayLength = 6;
-  uint8_t relayNodes[6] = {55, 65, 16, 56, 62, 93};
+  uint8_t relayNodes[6] = {55, 56, 65, 62, 16, 93};
   uint8_t relayRoutes[6][3] = {
-    {1, 1, 1},
-    {55, 2, 1},
-    {65, 1, 2},
-    {1, 2, 2},
-    {56, 1, 2},
-    {62, 2, 1}
-  };*/
+    {65, 2, 1},
+    {62, 1, 2},
+    {16, 1, 2},
+    {93, 2, 1},
+    {100, 2, 2},
+    {100, 1, 1}
+  };
 
-  uint8_t destinationNode = 2;
+  /*uint8_t destinationNode = 2;
   uint8_t sourceNode = 79;
   uint8_t sourceRoutes[2][3] = {
     {85, 1, 2},
@@ -81,7 +81,7 @@ implementation {
     {56, 2, 1},
     {2, 2, 2},
     {7, 1, 2}
-  };
+  };*/
 
   uint8_t getRelayIndex(uint8_t id) {
     uint8_t i;
