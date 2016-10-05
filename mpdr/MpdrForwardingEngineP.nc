@@ -64,6 +64,7 @@ implementation {
         call SerialLogger.log(LOG_SENDING_RADIO_1_TO, next1);
         result = call Radio1Send.send(next1, msgBuffer,
                                       len + sizeof(mpdr_msg_hdr_t));
+        call SerialLogger.log(LOG_RADIO_1_SEND_RESULT, result);
         if (result == SUCCESS) {
           radio1Busy = TRUE;
           signalSendDone1 = TRUE;
@@ -82,7 +83,9 @@ implementation {
       msg_hdr->next_hop = next2;
       if (!radio2Busy) {
         call SerialLogger.log(LOG_SENDING_RADIO_2_TO, next2);
-        result = call Radio2Send.send(next2, msgBuffer, len + sizeof(mpdr_msg_hdr_t));
+        result = call Radio2Send.send(next2, msgBuffer,
+                                      len + sizeof(mpdr_msg_hdr_t));
+        call SerialLogger.log(LOG_RADIO_2_SEND_RESULT, result);
         if (result == SUCCESS) {
           radio2Busy = TRUE;
           signalSendDone2 = TRUE;
