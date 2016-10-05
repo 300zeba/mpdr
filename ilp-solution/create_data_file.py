@@ -76,19 +76,25 @@ def create_data_file(nodes, links1, links2, output):
         w1 = 100 - value
         if w1 < 1:
             w1 = 1
+        if w1 > 90:
+            w1 = 1000
         w2 = 100
         if key in links2:
             w2 -= links2[key]
             if w2 < 1:
                 w2 = 1
+            if w2 > 90:
+                w2 = 1000
         output.write(str(key[0]) + "," + str(key[1]) + " " + str(w1) + " " + str(w2) + "\n")
     for key, value in links2.iteritems():
         if key in links1:
             continue
-        w1 = 100
+        w1 = 1000
         w2 = 100 - value
         if w2 < 1:
             w2 = 1
+        if w2 > 90:
+            w2 = 1000
         output.write(str(key[0]) + "," + str(key[1]) + " " + str(w1) + " " + str(w2) + "\n")
     output.write(";\nend;")
 
@@ -107,7 +113,8 @@ def create_nx_digraph(nodes, links, filename):
         G[key[0]][key[1]]['weight'] = (100-value) if (100-value) >= 1 else 1
     isolates = nx.isolates(G)
     G.remove_nodes_from(isolates)
-    pos = grid_layout(G, 10, 10)
+    # pos = grid_layout(G, 10, 10)
+    pos = nx.spring_layout(G)
     nx.draw_networkx_nodes(G, pos)
     nx.draw_networkx_edges(G, pos, arrows=False)
     nx.draw_networkx_labels(G, pos)
@@ -125,7 +132,8 @@ def get_link_intersection(links1, links2):
     link_inter = {}
     for key, value in links1.iteritems():
         if key in links2:
-            link_inter[key] = value
+            if value > 80 and links2[key] > 80:
+                link_inter[key] = value
     return link_inter;
 
 def main():
