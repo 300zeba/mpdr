@@ -1,6 +1,7 @@
 import subprocess
 import glob
 import re
+import sys
 
 LOG_CODES_FILE = "../serial-logger/SerialLogger.h"
 # LOG_CODES_FILE = "../test-two-radios/TestNetwork.h"
@@ -12,10 +13,14 @@ def execute(command):
         return output
     return error
 
-command = ["ls"]
-output = execute(command)
-files = output.split()
-lastFile = files[len(files)-1]
+if len(sys.argv) > 1:
+    lastFile = sys.argv[1]
+else:
+    command = ["ls"]
+    output = execute(command)
+    files = output.split()
+    lastFile = files[len(files)-1]
+    
 command = ["tar", "-xvzf", lastFile]
 output = execute(command)
 files = glob.glob("result/node_*")
