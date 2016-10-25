@@ -30,6 +30,8 @@ implementation {
   Forwarder.Radio2Receive -> RF212ActiveMessageC.Receive[22];
   Forwarder.Radio1Packet -> RF231ActiveMessageC;
   Forwarder.Radio2Packet -> RF212ActiveMessageC;
+  Forwarder.Radio1Ack -> RF231ActiveMessageC;
+  Forwarder.Radio2Ack -> RF212ActiveMessageC;
 
   components new PoolC(message_t, 100);
   components new QueueC(message_t*, 100) as Radio1Queue;
