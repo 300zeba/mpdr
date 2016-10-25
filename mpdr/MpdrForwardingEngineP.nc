@@ -235,6 +235,9 @@ implementation {
     mpdr_msg_hdr_t* rmsg;
     uint8_t len;
     error_t result;
+    if (error != SUCCESS) {
+      call SerialLogger.log(LOG_SEND_DONE_1_ERROR, error);
+    }
     if (signalSendDone1) {
       signal AMSend.sendDone(msg, error);
       signalSendDone1 = FALSE;
@@ -262,6 +265,9 @@ implementation {
     mpdr_msg_hdr_t* rmsg;
     uint8_t len;
     error_t result;
+    if (error != SUCCESS) {
+      call SerialLogger.log(LOG_SEND_DONE_2_ERROR, error);
+    }
     if (signalSendDone2) {
       signal AMSend.sendDone(msg, error);
       signalSendDone2 = FALSE;
