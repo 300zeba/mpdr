@@ -188,7 +188,7 @@ implementation {
       smsg->source = rmsg->source;
       smsg->destination = rmsg->destination;
       smsg->next_hop = next_hop;
-      if (!radio2Busy) {
+      if (!radio1Busy) {
         result = call Radio1Send.send(next_hop, msgBuffer, len);
         call SerialLogger.log(LOG_RADIO_1_SEND_RESULT, result);
         if (result == SUCCESS) {
