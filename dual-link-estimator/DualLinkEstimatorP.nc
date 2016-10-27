@@ -32,9 +32,6 @@ implementation {
   void sendMessage1() {
     message_t* msg;
     estimator_msg_t* payload;
-    if (seqno1 > 100) {
-      sending1 = FALSE;
-    }
     if (!sending1) {
       return;
     }
@@ -49,9 +46,6 @@ implementation {
   void sendMessage2() {
     message_t* msg;
     estimator_msg_t* payload;
-    if (seqno2 > 100) {
-      sending2 = FALSE;
-    }
     if (!sending2) {
       return;
     }
@@ -79,21 +73,18 @@ implementation {
   }
 
   event void Timer.fired() {
+    uint16_t newInterval;
     sendMessage1();
     sendMessage2();
-  }
-
-  event void Radio1Send.sendDone(message_t* msg, error_t err) {
-    if (sending1) {
-      sendMessage1();
+    if (sending1 || sending2) {
+      newInterval = call Random.rand16() % 500;
+      call Timer.startOneShot(newInterval);
     }
   }
 
-  event void Radio2Send.sendDone(message_t* msg, error_t err) {
-    if (sending2) {
-      sendMessage2();
-    }
-  }
+  event void Radio1Send.sendDone(message_t* msg, error_t err) {}
+
+  event void Radio2Send.sendDone(message_t* msg, error_t err) {}
 
   bool updateNeighbor(am_addr_t addr, uint16_t rseqno, neighbor_table_t* table) {
     uint8_t i;

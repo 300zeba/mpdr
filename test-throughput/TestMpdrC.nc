@@ -51,7 +51,7 @@ implementation {
   uint8_t rootAction;
   uint8_t numPaths = 2;
 
-  uint8_t destinationNode = 20;
+  /*uint8_t destinationNode = 20;
   uint8_t sourceNode = 7;
   uint8_t sourceRoutes[2][3] = {
     {12, 1, 1},
@@ -62,7 +62,7 @@ implementation {
   uint8_t relayRoutes[2][3] = {
     {20, 2, 1},
     {20, 1, 2}
-  };
+  };*/
 
   /*uint8_t destinationNode = 100;
   uint8_t sourceNode = 1;
@@ -83,7 +83,7 @@ implementation {
     {100, 2, 1}
   };*/
 
-  /*uint8_t destinationNode = 100;
+  uint8_t destinationNode = 100;
   uint8_t sourceNode = 1;
   uint8_t sourceRoutes[2][3] = {
     {35, 1, 1},
@@ -98,7 +98,7 @@ implementation {
     {95, 2, 1},
     {100, 2, 2},
     {100, 1, 1}
-  };*/
+  };
 
   /*uint8_t destinationNode = 2;
   uint8_t sourceNode = 79;

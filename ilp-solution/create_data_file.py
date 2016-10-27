@@ -132,12 +132,12 @@ def get_link_intersection(links1, links2):
     link_inter = {}
     for key, value in links1.iteritems():
         if key in links2:
-            if value > 80 and links2[key] > 80:
+            if value > 70 and links2[key] > 70:
                 link_inter[key] = value
     return link_inter;
 
 def main():
-    inputFile = open("node_1", "r")
+    inputFile = open("topology", "r")
     outputFile = open("opal.dat", "w")
     log = read_log_file(inputFile, ["uint16_t", "uint16_t", "uint8_t", "uint16_t"])
     nodes = get_nodes(log)

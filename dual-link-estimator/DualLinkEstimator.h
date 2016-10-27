@@ -1,7 +1,7 @@
 #ifndef DUAL_LINK_ESITIMATOR_H
 #define DUAL_LINK_ESITIMATOR_H
 
-#define MAX_NEIGHBOR_TABLE_SIZE 10
+#define MAX_NEIGHBOR_TABLE_SIZE 30
 
 typedef nx_struct estimator_msg {
   nx_am_addr_t source;
