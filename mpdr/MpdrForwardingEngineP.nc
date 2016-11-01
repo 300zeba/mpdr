@@ -32,8 +32,9 @@ implementation {
   bool radio2Busy = FALSE;
   bool signalSendDone1 = FALSE;
   bool signalSendDone2 = FALSE;
-  uint8_t radio = 2;
+  uint8_t radio = 1;
   uint16_t dropCount = 0;
+  bool requireAck = TRUE;
 
   command error_t StdControl.start() {
     dbg("StdControl", "MpdrForwardingEngineP started\n");
@@ -64,7 +65,11 @@ implementation {
       msg_hdr->next_hop = next1;
       if (!radio1Busy) {
         call SerialLogger.log(LOG_SENDING_RADIO_1_TO, next1);
-        result = call Radio1Ack.requestAck(msgBuffer);
+        if (requireAck) {
+          result = call Radio1Ack.requestAck(msgBuffer);
+        } else {
+          result = SUCCESS;
+        }
         if (result == SUCCESS) {
           result = call Radio1Send.send(next1, msgBuffer,
                                         len + sizeof(mpdr_msg_hdr_t));
@@ -90,7 +95,11 @@ implementation {
       msg_hdr->next_hop = next2;
       if (!radio2Busy) {
         call SerialLogger.log(LOG_SENDING_RADIO_2_TO, next2);
-        result = call Radio2Ack.requestAck(msgBuffer);
+        if (requireAck) {
+          result = call Radio2Ack.requestAck(msgBuffer);
+        } else {
+          result = SUCCESS;
+        }
         if (result == SUCCESS) {
           result = call Radio2Send.send(next2, msgBuffer,
                                         len + sizeof(mpdr_msg_hdr_t));
@@ -134,11 +143,12 @@ implementation {
     mpdr_msg_hdr_t* smsg;
     am_addr_t next_hop;
     error_t result;
-    // uint16_t* seqno = (uint16_t*) (payload + sizeof(mpdr_msg_hdr_t));
+    uint16_t* seqno = (uint16_t*) (payload + sizeof(mpdr_msg_hdr_t) + 1);
 
-    call SerialLogger.log(LOG_RECEIVED_RADIO_1_SOURCE, rmsg->source);
-    call SerialLogger.log(LOG_RECEIVED_RADIO_1_DESTINATION, rmsg->destination);
+    // call SerialLogger.log(LOG_RECEIVED_RADIO_1_SOURCE, rmsg->source);
+    // call SerialLogger.log(LOG_RECEIVED_RADIO_1_DESTINATION, rmsg->destination);
     // call SerialLogger.log(LOG_RECEIVED_RADIO_1_NEXT_HOP, rmsg->next_hop);
+    call SerialLogger.log(LOG_RECEIVED_RADIO_1_SEQNO, *seqno);
 
     if (rmsg->destination != TOS_NODE_ID) {
       call SerialLogger.log(LOG_TOS_NODE_ID, TOS_NODE_ID);
@@ -156,7 +166,11 @@ implementation {
       smsg->destination = rmsg->destination;
       smsg->next_hop = next_hop;
       if (!radio2Busy) {
-        result = call Radio2Ack.requestAck(msgBuffer);
+        if (requireAck) {
+          result = call Radio2Ack.requestAck(msgBuffer);
+        } else {
+          result = SUCCESS;
+        }
         if (result == SUCCESS) {
           result = call Radio2Send.send(next_hop, msgBuffer, len);
           call SerialLogger.log(LOG_RADIO_2_SEND_RESULT, result);
@@ -186,11 +200,12 @@ implementation {
     mpdr_msg_hdr_t* smsg;
     am_addr_t next_hop;
     error_t result;
-    // uint16_t* seqno = (uint16_t*) (payload + sizeof(mpdr_msg_hdr_t));
+    uint16_t* seqno = (uint16_t*) (payload + sizeof(mpdr_msg_hdr_t) + 1);
 
-    call SerialLogger.log(LOG_RECEIVED_RADIO_2_SOURCE, rmsg->source);
-    call SerialLogger.log(LOG_RECEIVED_RADIO_2_DESTINATION, rmsg->destination);
+    // call SerialLogger.log(LOG_RECEIVED_RADIO_2_SOURCE, rmsg->source);
+    // call SerialLogger.log(LOG_RECEIVED_RADIO_2_DESTINATION, rmsg->destination);
     // call SerialLogger.log(LOG_RECEIVED_RADIO_2_NEXT_HOP, rmsg->next_hop);
+    call SerialLogger.log(LOG_RECEIVED_RADIO_2_SEQNO, *seqno);
 
     if (rmsg->destination != TOS_NODE_ID) {
       call SerialLogger.log(LOG_TOS_NODE_ID, TOS_NODE_ID);
@@ -208,7 +223,11 @@ implementation {
       smsg->destination = rmsg->destination;
       smsg->next_hop = next_hop;
       if (!radio1Busy) {
-        result = call Radio1Ack.requestAck(msgBuffer);
+        if (requireAck) {
+          result = call Radio1Ack.requestAck(msgBuffer);
+        } else {
+          result = SUCCESS;
+        }
         if (result == SUCCESS) {
           result = call Radio1Send.send(next_hop, msgBuffer, len);
           call SerialLogger.log(LOG_RADIO_1_SEND_RESULT, result);
@@ -250,7 +269,11 @@ implementation {
       msg = call Radio1Queue.dequeue();
       rmsg = call Radio1Send.getPayload(msg, sizeof(mpdr_msg_hdr_t));
       len = call Packet.payloadLength(msg);
-      result = call Radio1Ack.requestAck(msg);
+      if (requireAck) {
+        result = call Radio1Ack.requestAck(msg);
+      } else {
+        result = SUCCESS;
+      }
       if (result == SUCCESS) {
         result = call Radio1Send.send(rmsg->next_hop, msg,
                                       len + sizeof(mpdr_msg_hdr_t));
@@ -280,7 +303,11 @@ implementation {
       msg = call Radio2Queue.dequeue();
       rmsg = call Radio2Send.getPayload(msg, sizeof(mpdr_msg_hdr_t));
       len = call Packet.payloadLength(msg);
-      result = call Radio2Ack.requestAck(msg);
+      if (requireAck) {
+        result = call Radio2Ack.requestAck(msg);
+      } else {
+        result = SUCCESS;
+      }
       if (result == SUCCESS) {
         result = call Radio2Send.send(rmsg->next_hop, msg,
                                       len + sizeof(mpdr_msg_hdr_t));

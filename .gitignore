@@ -1,2 +1,4 @@
 build/
 results/*.tgz
+*.png
+*.dat
