@@ -1,12 +1,12 @@
 #include "TestReceiver.h"
 
-#define SENDER1 93
-#define SENDER2 67
-#define RECEIVER 100
+#define SENDER1 13
+#define SENDER2 12
+#define RECEIVER 20
 
 #define SEND_PERIOD 2000
 #define SEND_DELAY 1000
-#define NUM_MSGS 100
+#define NUM_MSGS 10
 #define REQUIRE_ACK 0
 
 module TestReceiverC {
@@ -29,9 +29,6 @@ module TestReceiverC {
 
 implementation {
 
-  uint16_t statSerialStartAttempts = 0;
-  uint16_t statRadioStartAttempts = 0;
-
   uint16_t radio1Received = 0;
   uint16_t radio2Received = 0;
   uint16_t radio1Total = 0;
@@ -45,7 +42,6 @@ implementation {
 
   event void SerialControl.startDone(error_t err) {
     if (err != SUCCESS) {
-      statSerialStartAttempts++;
       call SerialControl.start();
     } else {
       call RadiosControl.start();
@@ -56,11 +52,8 @@ implementation {
 
   event void RadiosControl.startDone(error_t err) {
     if (err != SUCCESS) {
-      statRadioStartAttempts++;
       call RadiosControl.start();
     } else {
-      call SerialLogger.log(LOG_SERIAL_START_ATTEMPTS, statSerialStartAttempts);
-      call SerialLogger.log(LOG_RADIO_START_ATTEMPTS, statRadioStartAttempts);
       if (TOS_NODE_ID == SENDER1) {
         call SendTimer.startPeriodic(SEND_PERIOD);
         call FinishTimer.startOneShot(SEND_PERIOD * (NUM_MSGS+1));
@@ -117,6 +110,9 @@ implementation {
     } else {
       call SerialLogger.log(LOG_RADIO_1_SEND_DONE_ERROR, error);
     }
+    if (radio1Total >= NUM_MSGS) {
+      call SendTimer.stop();
+    }
   }
 
   event void Radio2Send.sendDone(message_t* msg, error_t error) {
@@ -124,6 +120,9 @@ implementation {
       call SerialLogger.log(LOG_RADIO_2_SEND_DONE, error);
     } else {
       call SerialLogger.log(LOG_RADIO_2_SEND_DONE_ERROR, error);
+    }
+    if (radio2Total >= NUM_MSGS) {
+      call SendTimer.stop();
     }
   }
 
