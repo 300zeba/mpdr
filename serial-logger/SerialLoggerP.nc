@@ -9,7 +9,6 @@ module SerialLoggerP {
   uses {
     interface SplitControl as SerialControl;
     interface AMSend as SerialSend;
-    interface Timer<TMilli>;
     interface Pool<message_t>;
     interface Queue<message_t*>;
   }
@@ -19,24 +18,31 @@ implementation {
 
   bool serialBusy = FALSE;
 
-  /*command error_t StdControl.start() {
-    call Timer.startPeriodic(SERIAL_TIMER_PERIOD_MILLI);
-    return SUCCESS;
+  task void sendTask() {
+    if (serialBusy) {
+      return;
+    } else if (call Queue.empty()) {
+      return;
+    } else {
+      message_t* smsg = call Queue.dequeue();
+      error_t result = call SerialSend.send(AM_BROADCAST_ADDR, smsg,
+                                            sizeof(serial_log_message_t));
+      if (result == SUCCESS) {
+        serialBusy = TRUE;
+      } else {
+        call Pool.put(smsg);
+        if (!call Queue.empty()) {
+          post sendTask();
+        }
+      }
+    }
   }
-
-  command error_t StdControl.stop() {
-    call Timer.stop();
-    return SUCCESS;
-  }*/
 
   command error_t SplitControl.start() {
     return call SerialControl.start();
   }
 
   event void SerialControl.startDone(error_t error) {
-    if (error == SUCCESS) {
-      call Timer.startPeriodic(SERIAL_TIMER_PERIOD_MILLI);
-    }
     signal SplitControl.startDone(error);
   }
 
@@ -49,27 +55,31 @@ implementation {
   }
 
   command void SerialLogger.log(uint16_t evt, uint16_t data) {
-    message_t* msg = call Pool.get();
-    serial_log_message_t* smsg = (serial_log_message_t*) call SerialSend.getPayload(msg, sizeof(serial_log_message_t));
-    smsg->timestamp = call Timer.getNow();
-    smsg->nodeid = TOS_NODE_ID;
-    smsg->evt = evt;
-    smsg->data = data;
-    call Queue.enqueue(msg);
-  }
-
-  event void Timer.fired() {
-    if (!serialBusy && !call Queue.empty()) {
-      message_t* msg = call Queue.dequeue();
-      call SerialSend.send(AM_BROADCAST_ADDR, msg, sizeof(serial_log_message_t));
-      call Pool.put(msg);
-      serialBusy = TRUE;
+    if (call Pool.empty()) {
+      return;
+    } else {
+      message_t* msg = call Pool.get();
+      serial_log_message_t* smsg = (serial_log_message_t*)
+                  call SerialSend.getPayload(msg, sizeof(serial_log_message_t));
+      if (smsg == NULL) {
+        return;
+      }
+      smsg->evt = evt;
+      smsg->data = data;
+      if (call Queue.enqueue(msg) == SUCCESS) {
+        post sendTask();
+      } else {
+        call Pool.put(msg);
+      }
     }
+
   }
 
   event void SerialSend.sendDone(message_t * msg, error_t error) {
-    if (error == SUCCESS) {
-      serialBusy = FALSE;
+    call Pool.put(msg);
+    serialBusy = FALSE;
+    if (!call Queue.empty()) {
+      post sendTask();
     }
   }
 

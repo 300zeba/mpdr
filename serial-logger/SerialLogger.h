@@ -72,8 +72,6 @@ enum {
 };
 
 typedef nx_struct serial_log_message {
-  nx_uint32_t timestamp;
-  nx_uint16_t nodeid;
   nx_uint16_t evt;
   nx_uint16_t data;
 } serial_log_message_t;
