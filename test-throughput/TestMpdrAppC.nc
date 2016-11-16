@@ -8,12 +8,12 @@ implementation {
 
   components new TimerMilliC() as InitTimerC;
   App.InitTimer -> InitTimerC;
-  components new TimerMilliC() as NodeTimerC;
-  App.NodeTimer -> NodeTimerC;
-  components new TimerMilliC() as RootTimerC;
-  App.RootTimer -> RootTimerC;
   components new TimerMilliC() as SendTimerC;
   App.SendTimer -> SendTimerC;
+  components new TimerMilliC() as StopTimerC;
+  App.StopTimer -> StopTimerC;
+  components new TimerMilliC() as FinishTimerC;
+  App.FinishTimer -> FinishTimerC;
 
   components SerialLoggerC;
   App.SerialControl -> SerialLoggerC;

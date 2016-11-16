@@ -1,17 +1,32 @@
 #include "TestMpdr.h"
 #include "../serial-logger/SerialLogger.h"
 
-#define ROOT_NODE 2
-#define NUM_HOPS 3
+// Define NON_STOP to 1 to send a message after a sendDone is signaled.
+// Define to 0 to send a message only each SEND_PERIOD.
+#define NON_STOP 0
+
+// Time to send each message if NON_STOP is not defined.
+#define SEND_PERIOD 100
+
+// Define TEST_DURATION to the maximum amount of time the test to run.
+// Set to 0 for unlimited.
+#define TEST_DURATION 0
+
+// Define NUM_MSGS to the maximum number of messages sent.
+// Set to 0 for unlimited.
+#define NUM_MSGS 100
+
+// Time to finish the experiment.
+#define FINISH_TIME 60000
 
 module TestMpdrC {
   uses {
     interface Boot;
 
     interface Timer<TMilli> as InitTimer;
-    interface Timer<TMilli> as NodeTimer;
-    interface Timer<TMilli> as RootTimer;
     interface Timer<TMilli> as SendTimer;
+    interface Timer<TMilli> as StopTimer;
+    interface Timer<TMilli> as FinishTimer;
 
     interface SplitControl as SerialControl;
     interface SerialLogger;
@@ -29,17 +44,16 @@ module TestMpdrC {
 
 implementation {
 
-  am_addr_t sendTo = 1;
   message_t msgBuffer;
   bool transmitting = FALSE;
-  bool sendBusy = FALSE;
 
+  uint16_t sendCount = 0;
   uint16_t receivedCount = 0;
-  uint16_t totalCount = 0;
-  uint16_t sendBusyCount = 0;
-  uint32_t timeElapsed;
-  uint8_t messageSize;
-  uint16_t throughput;
+  uint16_t messageSize;
+
+  uint32_t startTime = 0;
+  uint32_t endTime = 0;
+  uint32_t elapsedTime = 0;
 
   enum {
     SEND_PATH_1,
@@ -52,80 +66,18 @@ implementation {
   uint8_t numPaths = 2;
 
   // Routes:
-  // 01 -> 05 -> 10 -> 31 -> 12 -> 14 -> 93 -> 100
-  // 01 -> 60 -> 62 -> 64 -> 67 -> 100
-  uint8_t destinationNode = 100;
+  uint8_t destinationNode = 10;
   uint8_t sourceNode = 1;
   uint8_t sourceRoutes[2][3] = {
     {5, 1, 1},
-    {60, 2, 2}
+    {6, 2, 2},
   };
-  uint8_t relayLength = 10;
-  uint8_t relayNodes[10] = {5, 10, 31, 12, 14, 93, 60, 62, 64, 67};
-  uint8_t relayRoutes[10][3] = {
+  uint8_t relayLength = 2;
+  uint8_t relayNodes[2] = {5, 6, };
+  uint8_t relayRoutes[2][3] = {
     {10, 2, 1},
-    {31, 1, 2},
-    {12, 2, 2},
-    {14, 1, 1},
-    {93, 2, 1},
-    {100, 1, 2},
-
-    {62, 1, 2},
-    {64, 2, 1},
-    {67, 1, 1},
-    {100, 2, 2},
+    {10, 1, 2},
   };
-
-  /*uint8_t destinationNode = 100;
-  uint8_t sourceNode = 1;
-  uint8_t sourceRoutes[2][3] = {
-    {76, 1, 1},
-    {6, 2, 2}
-  };
-  uint8_t relayLength = 8;
-  uint8_t relayNodes[8] = {76, 6, 27, 13, 34, 95, 12, 20};
-  uint8_t relayRoutes[8][3] = {
-    {27, 2, 1},
-    {13, 1, 2},
-    {34, 1, 2},
-    {95, 2, 1},
-    {12, 2, 2},
-    {100, 1, 1},
-    {20, 1, 1},
-    {100, 2, 1}
-  };*/
-
-  /*uint8_t destinationNode = 100;
-  uint8_t sourceNode = 1;
-  uint8_t sourceRoutes[2][3] = {
-    {35, 1, 1},
-    {6, 2, 2}
-  };
-  uint8_t relayLength = 6;
-  uint8_t relayNodes[6] = {35, 6, 12, 13, 20, 95};
-  uint8_t relayRoutes[6][3] = {
-    {12, 2, 1},
-    {13, 1, 2},
-    {20, 1, 2},
-    {95, 2, 1},
-    {100, 2, 2},
-    {100, 1, 1}
-  };*/
-
-  /*uint8_t destinationNode = 2;
-  uint8_t sourceNode = 79;
-  uint8_t sourceRoutes[2][3] = {
-    {85, 1, 2},
-    {29, 2, 1}
-  };
-  uint8_t relayLength = 4;
-  uint8_t relayNodes[4] = {56, 85, 7, 29};
-  uint8_t relayRoutes[4][3] = {
-    {2, 1, 1},
-    {56, 2, 1},
-    {2, 2, 2},
-    {7, 1, 2}
-  };*/
 
   uint8_t getRelayIndex(uint8_t id) {
     uint8_t i;
@@ -200,7 +152,7 @@ implementation {
       channel2 = getDestinationRadioChannel(2);
       call MpdrRouting.setRadioChannel(1, channel1);
       call MpdrRouting.setRadioChannel(2, channel2);
-      // call RootTimer.startOneShot(60000);
+      call FinishTimer.startOneShot(FINISH_TIME);
     } else if (TOS_NODE_ID == sourceNode) {
       call SerialLogger.log(LOG_SOURCE_NODE, sourceNode);
       call MpdrRouting.addSendRoute(sourceNode, destinationNode,
@@ -214,6 +166,7 @@ implementation {
       call MpdrRouting.setRadioChannel(sourceRoutes[1][1],
                                        sourceRoutes[1][2]);
       call SendTimer.startOneShot(10000);
+      call FinishTimer.startOneShot(FINISH_TIME);
     } else {
       relayIndex = getRelayIndex(TOS_NODE_ID);
       if (relayIndex < relayLength) {
@@ -234,61 +187,68 @@ implementation {
     }
   }
 
-  event void RootTimer.fired() {
-      call SerialLogger.log(LOG_RECEIVED_COUNT, receivedCount);
-      call SerialLogger.log(LOG_TOTAL_COUNT, totalCount);
-      //call SerialLogger.log(LOG_MESSAGE_SIZE, messageSize);
-      //call SerialLogger.log(LOG_THROUGHPUT, throughput);
-  }
-
-  event void NodeTimer.fired() {
-    transmitting = FALSE;
-    call SerialLogger.log(LOG_TOTAL_SENT, totalCount);
-  }
-
   void sendMessage() {
     uint8_t i;
     message_t* msg;
     mpdr_test_msg_t* payload;
     error_t error;
+    if (NUM_MSGS != 0 && sendCount > NUM_MSGS) {
+      transmitting = FALSE;
+      return;
+    }
     msg = &msgBuffer;
     payload = (mpdr_test_msg_t*) call MpdrPacket.getPayload(msg,
                                                        sizeof(mpdr_test_msg_t));
-    payload->seqno = totalCount;
+    payload->seqno = sendCount;
     for (i = 0; i < MSG_SIZE; i++) {
       payload->data[i] = i;
     }
     call MpdrPacket.setPayloadLength(msg, sizeof(mpdr_test_msg_t));
-    error = call MpdrSend.send(sendTo, msg, sizeof(mpdr_test_msg_t));
+    error = call MpdrSend.send(destinationNode, msg, sizeof(mpdr_test_msg_t));
     if (error != SUCCESS) {
       call SerialLogger.log(LOG_ERROR_MPDR_SEND, error);
     }
+    endTime = call FinishTimer.getNow();
   }
 
   event void SendTimer.fired() {
     if (call SendTimer.isOneShot()) {
       call SerialLogger.log(LOG_START_SENDING, 0);
-      sendTo = destinationNode;
+      startTime = call FinishTimer.getNow();
       transmitting = TRUE;
-      call SendTimer.startPeriodic(1000);
-    }
-    if (totalCount > 99) {
-      transmitting = FALSE;
-    }
-    if (transmitting) {
       sendMessage();
+      if (NON_STOP == 0) {
+        call SendTimer.startPeriodic(SEND_PERIOD);
+      }
+      if (TEST_DURATION != 0) {
+        call StopTimer.startOneShot(TEST_DURATION);
+      }
+    } else {
+      if (transmitting) {
+        sendMessage();
+      } else {
+        call SendTimer.stop();
+      }
     }
+  }
+
+  event void StopTimer.fired() {
+    transmitting = FALSE;
+    call SendTimer.stop();
   }
 
   event void MpdrSend.sendDone(message_t* msg, error_t error) {
     mpdr_test_msg_t* payload;
     if (error == SUCCESS) {
-      totalCount++;
+      sendCount++;
       payload = (mpdr_test_msg_t*) call MpdrPacket.getPayload(msg,
                                                        sizeof(mpdr_test_msg_t));
       call SerialLogger.log(LOG_MPDR_SEND_DONE, payload->seqno);
     } else {
       call SerialLogger.log(LOG_ERROR_MPDR_SEND_DONE, error);
+    }
+    if (NON_STOP) {
+      sendMessage();
     }
   }
 
@@ -297,7 +257,7 @@ implementation {
     uint8_t i;
     mpdr_test_msg_t* rcvdPayload = (mpdr_test_msg_t*) payload;
     receivedCount++;
-    totalCount = rcvdPayload->seqno;
+    sendCount = rcvdPayload->seqno;
     call SerialLogger.log(LOG_MPDR_RECEIVE, rcvdPayload->seqno);
     for (i = 0; i < MSG_SIZE; i++) {
       if (rcvdPayload->data[i] != i) {
@@ -305,8 +265,26 @@ implementation {
         call SerialLogger.log(LOG_MSG_ERROR_DATA, rcvdPayload->data[i]);
       }
     }
+    if (startTime == 0) {
+      startTime = call FinishTimer.getNow();
+    }
+    endTime = call FinishTimer.getNow();
     return msg;
+  }
+
+  event void FinishTimer.fired() {
+    if (TOS_NODE_ID == sourceNode) {
+      call SerialLogger.log(LOG_SEND_COUNT, sendCount);
+    } else if (TOS_NODE_ID == destinationNode) {
+      call SerialLogger.log(LOG_RECEIVED_COUNT, receivedCount);
+    }
+    elapsedTime = endTime - startTime;
+    call SerialLogger.log(LOG_ELAPSED_TIME, elapsedTime);
+    call SerialLogger.log(LOG_MESSAGE_SIZE, sizeof(message_t));
+    call SerialLogger.log(LOG_PAYLOAD_SIZE, sizeof(mpdr_test_msg_t));
   }
 
   event void MpdrRouting.pathsReady(am_addr_t destination) {}
 }
+
+//Fix
