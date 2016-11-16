@@ -3,18 +3,18 @@
 
 // Define NON_STOP to 1 to send a message after a sendDone is signaled.
 // Define to 0 to send a message only each SEND_PERIOD.
-#define NON_STOP 0
+#define NON_STOP 1
 
 // Time to send each message if NON_STOP is not defined.
 #define SEND_PERIOD 100
 
 // Define TEST_DURATION to the maximum amount of time the test to run.
 // Set to 0 for unlimited.
-#define TEST_DURATION 0
+#define TEST_DURATION 30000
 
 // Define NUM_MSGS to the maximum number of messages sent.
 // Set to 0 for unlimited.
-#define NUM_MSGS 100
+#define NUM_MSGS 0
 
 // Time to finish the experiment.
 #define FINISH_TIME 60000
@@ -238,12 +238,12 @@ implementation {
   }
 
   event void MpdrSend.sendDone(message_t* msg, error_t error) {
-    mpdr_test_msg_t* payload;
+    // mpdr_test_msg_t* payload;
     if (error == SUCCESS) {
       sendCount++;
-      payload = (mpdr_test_msg_t*) call MpdrPacket.getPayload(msg,
-                                                       sizeof(mpdr_test_msg_t));
-      call SerialLogger.log(LOG_MPDR_SEND_DONE, payload->seqno);
+      // payload = (mpdr_test_msg_t*) call MpdrPacket.getPayload(msg,
+      //                                                  sizeof(mpdr_test_msg_t));
+      // call SerialLogger.log(LOG_MPDR_SEND_DONE, payload->seqno);
     } else {
       call SerialLogger.log(LOG_ERROR_MPDR_SEND_DONE, error);
     }
@@ -258,7 +258,7 @@ implementation {
     mpdr_test_msg_t* rcvdPayload = (mpdr_test_msg_t*) payload;
     receivedCount++;
     sendCount = rcvdPayload->seqno;
-    call SerialLogger.log(LOG_MPDR_RECEIVE, rcvdPayload->seqno);
+    // call SerialLogger.log(LOG_MPDR_RECEIVE, rcvdPayload->seqno);
     for (i = 0; i < MSG_SIZE; i++) {
       if (rcvdPayload->data[i] != i) {
         call SerialLogger.log(LOG_MSG_ERROR_I, i);

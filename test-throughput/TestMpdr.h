@@ -1,7 +1,7 @@
 #ifndef TEST_MPDR_H
 #define TEST_MPDR_H
 
-#define MSG_SIZE 18
+#define MSG_SIZE 98
 
 typedef nx_struct mpdr_test_msg {
   nx_uint16_t seqno;

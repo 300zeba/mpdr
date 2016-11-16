@@ -15,6 +15,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--log-codes-file", nargs="?",
                         type=argparse.FileType("r"), required=True)
+    parser.add_argument("-o", "--output-file", nargs="?",
+                        type=argparse.FileType("w"))
     parser.add_argument("-i", "--input-file")
     args = parser.parse_args()
 
@@ -43,6 +45,8 @@ def main():
                 continue
             p = re.compile(r"\d+")
             f = p.findall(values)
+            if len(f) != 4:
+                continue
             for i in range(len(f)):
                 f[i] = int(f[i])
             logEntry = []
@@ -69,6 +73,8 @@ def main():
             logEntryText += str(logEntry[1]) + " "
         logEntryText += str(logEntry[2]) + "\n"
         print logEntryText,
+        if args.output_file:
+            args.output_file.write(logEntryText)
     command = ["rm", "-r", "result"]
     output = execute(command)
 
