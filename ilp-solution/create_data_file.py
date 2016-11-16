@@ -1,6 +1,7 @@
 import re
 import networkx as nx
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
+import argparse
 
 def read_log_file(file, format):
     """
@@ -62,9 +63,7 @@ def get_links(log, radio):
             links[(origin, destination)] = quality
     return links
 
-def create_data_file(nodes, links1, links2, output):
-    origin = 1
-    destination = 100
+def create_data_file(nodes, links1, links2, output, origin, destination):
     output.write("data;\nset N :=")
     for i in range(len(nodes)):
         if i == 0:
@@ -118,8 +117,8 @@ def create_nx_digraph(nodes, links, filename):
     nx.draw_networkx_nodes(G, pos)
     nx.draw_networkx_edges(G, pos, arrows=False)
     nx.draw_networkx_labels(G, pos)
-    plt.savefig(filename)
-    plt.show()
+    # plt.savefig(filename)
+    # plt.show()
 
 def get_link_difference(links1, links2):
     link_diff = {}
@@ -137,15 +136,25 @@ def get_link_intersection(links1, links2):
     return link_inter;
 
 def main():
-    inputFile = open("topology", "r")
-    outputFile = open("opal.dat", "w")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input-file", nargs="?",
+                        type=argparse.FileType("r"), required=True)
+    parser.add_argument("-o", "--output-file", nargs="?",
+                        type=argparse.FileType("w"), required=True)
+    parser.add_argument("-s", "--source", type=int, default=1)
+    parser.add_argument("-d", "--destination", type=int, default=100)
+    args = parser.parse_args()
+    inputFile = args.input_file
+    outputFile = args.output_file
+    source = args.source
+    destination = args.destination
     log = read_log_file(inputFile, ["uint16_t", "uint16_t", "uint8_t", "uint16_t"])
     nodes = get_nodes(log)
     links1 = get_links(log, 1)
     links2 = get_links(log, 2)
-    create_data_file(nodes, links1, links2, outputFile)
+    create_data_file(nodes, links1, links2, outputFile, source, destination)
     both_links = get_link_intersection(links1, links2)
-    create_nx_digraph(nodes, both_links, "both_links.png")
+    # create_nx_digraph(nodes, both_links, "both_links.png")
 
 if __name__ == "__main__":
     main()
