@@ -5,7 +5,7 @@
 #define RECEIVER2 6
 
 #define SEND_PERIOD 250
-#define NUM_MSGS 1000
+#define NUM_MSGS 0
 #define REQUIRE_ACK 0
 #define END_TIME 30000
 #define FINISH_TIME 60000
@@ -45,7 +45,6 @@ implementation {
 
   message_t msgBuffer1;
   message_t msgBuffer2;
-  message_t ctrlMsgBuffer;
 
   void sendMessage() {
     test_msg_t* msg;
@@ -137,6 +136,7 @@ implementation {
 
   event void SendTimer.fired() {
     if (sending) {
+      sendMessage();
       sendMessage();
     } else {
       call SendTimer.stop();

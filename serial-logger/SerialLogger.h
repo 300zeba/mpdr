@@ -3,7 +3,7 @@
 
 #define SERIAL_TIMER_PERIOD_MILLI 250
 
-enum {
+/*enum {
   LOG_NUM_PATHS,
   LOG_ROOT_ACTION,
   LOG_RESEND_PATHS,
@@ -70,7 +70,7 @@ enum {
   LOG_RELAY_NODE,
   LOG_ELAPSED_TIME,
   LOG_PAYLOAD_SIZE,
-};
+};*/
 
 typedef nx_struct serial_log_message {
   nx_uint16_t evt;
