@@ -58,43 +58,42 @@ def get_links(log, radio):
         destination = line[0]
         origin = line[1]
         link_radio = line[2]
-        quality = line[3];
+        quality = 100 - line[3]
+        if quality < 1:
+            quality = 1;
+        if quality > 90:
+            quality = 10000
         if link_radio == radio:
             links[(origin, destination)] = quality
     return links
 
-def create_data_file(nodes, links1, links2, output, origin, destination):
+def merge_links(links1, links2):
+    merged = {}
+    for key, value in links1.iteritems():
+        merged[key] = [value, 10000]
+    for key, value in links2.iteritems():
+        if key in merged:
+            merged[key][1] = value
+        else:
+            merged[key] = [10000, value]
+    return merged
+
+def create_data_file(nodes, merged, output, origin, destination):
     output.write("data;\nset N :=")
+    nodes.sort()
     for i in range(len(nodes)):
         if i == 0:
             output.write(" " + str(nodes[i]))
         else:
             output.write(", " + str(nodes[i]))
-    output.write(";\nset O := " + str(origin) + ";\nset D := "+ str(destination) +";\nparam: A: c1 c2 :=\n")
-    for key, value in links1.iteritems():
-        w1 = 100 - value
-        if w1 < 1:
-            w1 = 1
-        if w1 > 90:
-            w1 = 1000
-        w2 = 100
-        if key in links2:
-            w2 -= links2[key]
-            if w2 < 1:
-                w2 = 1
-            if w2 > 90:
-                w2 = 1000
-        output.write(str(key[0]) + "," + str(key[1]) + " " + str(w1) + " " + str(w2) + "\n")
-    for key, value in links2.iteritems():
-        if key in links1:
-            continue
-        w1 = 1000
-        w2 = 100 - value
-        if w2 < 1:
-            w2 = 1
-        if w2 > 90:
-            w2 = 1000
-        output.write(str(key[0]) + "," + str(key[1]) + " " + str(w1) + " " + str(w2) + "\n")
+    output.write(";\nset O := " + str(origin) + ";\n")
+    output.write("set D := "+ str(destination) +";\nparam: A: c1 c2 :=\n")
+    keys = merged.keys()
+    keys.sort(key=lambda x: (x[0], x[1]))
+    for key in keys:
+        value = merged[key]
+        output.write(str(key[0]) + "," + str(key[1]) + " ")
+        output.write(str(value[0]) + " " + str(value[1]) + "\n")
     output.write(";\nend;")
 
 def grid_layout(G, width, height):
@@ -152,7 +151,8 @@ def main():
     nodes = get_nodes(log)
     links1 = get_links(log, 1)
     links2 = get_links(log, 2)
-    create_data_file(nodes, links1, links2, outputFile, source, destination)
+    merged = merge_links(links1, links2)
+    create_data_file(nodes, merged, outputFile, source, destination)
     both_links = get_link_intersection(links1, links2)
     # create_nx_digraph(nodes, both_links, "both_links.png")
 
