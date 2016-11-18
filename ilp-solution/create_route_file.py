@@ -85,12 +85,16 @@ def add_channel(links, source, destination):
 
 def get_routes(inputFile, outputFile):
     text = inputFile.read()
+    matches = re.search(r"obj = (\d+)", text)
+    value = matches.group(1)
     matches = re.findall(r"x(\d)\[(\d+),(\d+)\] *\* *1", text)
     links = to_dict(matches)
     source = get_source(links)
     destination = get_destination(links)
     source_routes, relay_routes = add_channel(links, source, destination)
-    outputText = ""
+    paths_len = len(source_routes) + len(relay_routes)
+    outputText =  "  // Paths' cost: " + value + "\n"
+    outputText += "  // Paths' len: " + str(paths_len) + "\n"
     outputText += "  uint8_t destinationNode = " + str(destination) + ";\n"
     outputText += "  uint8_t sourceNode = " + str(source) + ";\n"
     outputText += "  uint8_t sourceRoutes[2][3] = {\n"

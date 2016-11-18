@@ -4,9 +4,9 @@
 #define RECEIVER1 5
 #define RECEIVER2 6
 
-#define NUM_RADIOS 2
-#define NON_STOP_SEND 1
-#define SEND_PERIOD 250
+#define DEF_NUM_RADIOS 1
+#define NON_STOP_SEND 0
+#define SEND_PERIOD 4
 #define NUM_MSGS 1000
 #define END_TIME 0
 #define FINISH_TIME 60000
@@ -45,6 +45,10 @@ implementation {
   bool sending = FALSE;
   bool countingTime = FALSE;
   uint8_t radio = 1;
+  uint16_t ebusy1Count = 0;
+  uint16_t ebusy2Count = 0;
+  uint16_t sendDone1Count = 0;
+  uint16_t sendDone2Count = 0;
 
   message_t msgBuffer1;
   message_t msgBuffer2;
@@ -53,7 +57,7 @@ implementation {
   void sendMessage() {
     test_msg_t* msg;
     error_t eval;
-    if (NUM_MSGS > 0 && (radio1Total + radio2Total) > NUM_MSGS) {
+    if (NUM_MSGS > 0 && (radio1Total + radio2Total) >= NUM_MSGS) {
       sending = FALSE;
     }
     if (!sending) {
@@ -67,7 +71,7 @@ implementation {
     }
     if (!radio1Busy) {
       radio = 1;
-    } else if (!radio2Busy && NUM_RADIOS == 2) {
+    } else if (!radio2Busy && DEF_NUM_RADIOS == 2) {
       radio = 2;
     } else {
       call SerialLogger.log(LOG_RADIOS_BUSY_ERROR, 0);
@@ -83,8 +87,10 @@ implementation {
       eval = call Radio1Send.send(RECEIVER1, &msgBuffer1, sizeof(test_msg_t));
       if (eval == SUCCESS) {
         // call SerialLogger.log(LOG_RADIO_1_SEND, radio1Total);
-        radio1Busy = TRUE;
+        // radio1Busy = TRUE;
         radio1Total++;
+      } else if (eval == EBUSY) {
+        ebusy1Count++;
       } else {
         call SerialLogger.log(LOG_RADIO_1_SEND_ERROR, eval);
       }
@@ -99,8 +105,10 @@ implementation {
       eval = call Radio2Send.send(RECEIVER2, &msgBuffer2, sizeof(test_msg_t));
       if (eval == SUCCESS) {
         // call SerialLogger.log(LOG_RADIO_2_SEND, radio2Total);
-        radio2Busy = TRUE;
+        // radio2Busy = TRUE;
         radio2Total++;
+      } else if (eval == EBUSY) {
+        ebusy2Count++;
       } else {
         call SerialLogger.log(LOG_RADIO_2_SEND_ERROR, eval);
       }
@@ -135,7 +143,7 @@ implementation {
     if (TOS_NODE_ID == SENDER) {
       sending = TRUE;
       sendMessage();
-      if (NUM_RADIOS == 2) {
+      if (DEF_NUM_RADIOS == 2) {
         sendMessage();
       }
       if (NON_STOP_SEND == 0) {
@@ -151,7 +159,7 @@ implementation {
   event void SendTimer.fired() {
     if (sending) {
       sendMessage();
-      if (NUM_RADIOS == 2) {
+      if (DEF_NUM_RADIOS == 2) {
         sendMessage();
       }
     } else {
@@ -166,6 +174,7 @@ implementation {
   event void Radio1Send.sendDone(message_t* msg, error_t error) {
     radio1Busy = FALSE;
     if (error == SUCCESS) {
+      sendDone1Count++;
       // call SerialLogger.log(LOG_RADIO_1_SEND_DONE, error);
     } else {
       call SerialLogger.log(LOG_RADIO_1_SEND_DONE_ERROR, error);
@@ -178,6 +187,7 @@ implementation {
   event void Radio2Send.sendDone(message_t* msg, error_t error) {
     radio2Busy = FALSE;
     if (error == SUCCESS) {
+      sendDone2Count++;
       // call SerialLogger.log(LOG_RADIO_2_SEND_DONE, error);
     } else {
       call SerialLogger.log(LOG_RADIO_2_SEND_DONE_ERROR, error);
@@ -219,6 +229,10 @@ implementation {
     if (TOS_NODE_ID == SENDER) {
       call SerialLogger.log(LOG_RADIO_1_TOTAL, radio1Total);
       call SerialLogger.log(LOG_RADIO_2_TOTAL, radio2Total);
+      call SerialLogger.log(LOG_EBUSY_1_COUNT, ebusy1Count);
+      call SerialLogger.log(LOG_EBUSY_2_COUNT, ebusy2Count);
+      call SerialLogger.log(LOG_SEND_DONE_1_COUNT, sendDone1Count);
+      call SerialLogger.log(LOG_SEND_DONE_2_COUNT, sendDone2Count);
     } else if (TOS_NODE_ID == RECEIVER1) {
       call SerialLogger.log(LOG_RADIO_1_RECEIVED_TOTAL, radio1Received);
     } else if (TOS_NODE_ID == RECEIVER2) {
@@ -228,4 +242,5 @@ implementation {
     call SerialLogger.log(LOG_MESSAGE_SIZE, sizeof(message_t));
     call SerialLogger.log(LOG_PAYLOAD_SIZE, sizeof(test_msg_t));
   }
+
 }
