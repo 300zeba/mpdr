@@ -1,6 +1,4 @@
 import re
-import networkx as nx
-import matplotlib.pyplot as plt
 import argparse
 import pprint as pp
 
@@ -14,16 +12,22 @@ def to_dict(string_tuples):
 
 def get_source(links):
     for i in range(len(links)):
-        for j in range(i+1, len(links)):
-            if links[i]["source"] == links[j]["source"]:
-                return links[i]["source"]
+        found = False
+        for j in range(len(links)):
+            if links[i]["source"] == links[j]["destination"]:
+                found = True
+        if not found:
+            return links[i]["source"]
     return None
 
 def get_destination(links):
     for i in range(len(links)):
-        for j in range(i+1, len(links)):
-            if links[i]["destination"] == links[j]["destination"]:
-                return links[i]["destination"]
+        found = False
+        for j in range(len(links)):
+            if links[i]["destination"] == links[j]["source"]:
+                found = True
+        if not found:
+            return links[i]["destination"]
     return None
 
 def get_next_hop(links, source, first=None):
@@ -53,33 +57,35 @@ def add_channel(links, source, destination):
     source_routes = []
     relay_routes = []
     current_node = get_link(links, source=source, radio=1)
-    source_routes.append(current_node)
-    next_hop = current_node["destination"]
-    channel = 1
-    count = 0
-    while next_hop != destination:
-        current_node["channel"] = channel
-        count += 1
-        if count % 2 == 0:
-            channel = 1 if channel == 2 else 2
-        current_node = get_link(links, source=next_hop)
-        relay_routes.append(current_node)
+    if current_node:
+        source_routes.append(current_node)
         next_hop = current_node["destination"]
-    current_node["channel"] = channel
+        channel = 1
+        count = 0
+        while next_hop != destination:
+            current_node["channel"] = channel
+            count += 1
+            if count % 2 == 0:
+                channel = 1 if channel == 2 else 2
+            current_node = get_link(links, source=next_hop)
+            relay_routes.append(current_node)
+            next_hop = current_node["destination"]
+        current_node["channel"] = channel
     current_node = get_link(links, source=source, radio=2)
-    source_routes.append(current_node)
-    next_hop = current_node["destination"]
-    channel = 2
-    count = 0
-    while next_hop != destination:
-        current_node["channel"] = channel
-        count += 1
-        if count % 2 == 0:
-            channel = 1 if channel == 2 else 2
-        current_node = get_link(links, source=next_hop)
-        relay_routes.append(current_node)
+    if current_node:
+        source_routes.append(current_node)
         next_hop = current_node["destination"]
-    current_node["channel"] = channel
+        channel = 2
+        count = 0
+        while next_hop != destination:
+            current_node["channel"] = channel
+            count += 1
+            if count % 2 == 0:
+                channel = 1 if channel == 2 else 2
+            current_node = get_link(links, source=next_hop)
+            relay_routes.append(current_node)
+            next_hop = current_node["destination"]
+        current_node["channel"] = channel
     return source_routes, relay_routes
 
 

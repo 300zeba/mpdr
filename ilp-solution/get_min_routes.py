@@ -12,7 +12,7 @@ def main():
                         type=argparse.FileType("w"), default=sys.stdout)
     args = parser.parse_args()
     outputFile = args.output_file
-    files = glob.glob("route_*")
+    files = glob.glob("dual_route_*")
     min_routes = {}
     for fileName in files:
         inputFile = open(fileName, "r")

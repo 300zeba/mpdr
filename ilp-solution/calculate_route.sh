@@ -9,5 +9,5 @@ for i in 2 3 4 5 6 7 8 9 10 12 13 14 16 17 18 19 20 22 23 24 25 26 27 28 29 30 3
 do
   python create_data_file.py -i topology -o data.dat -s 1 -d $i &&
   glpsol -m shortest_paths_with_parity.mod -d data.dat -o ilp_output.txt &&
-  python create_route_file.py -i ilp_output.txt -o route_$i.txt
+  python create_route_file.py -i ilp_output.txt -o dual_route_$i.txt
 done
