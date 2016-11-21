@@ -168,12 +168,12 @@ implementation {
       return FAIL;
     }
     if (radio == 1) {
-      call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL, chosen);
+      // call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL, chosen);
       result = FAIL;
       while (result != SUCCESS && attempts < 300) {
         result = call RadioChannel1.setChannel(chosen);
         if (result == EALREADY) {
-          call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL_OK, chosen);
+          // call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL_OK, chosen);
           result = SUCCESS;
         }
         if (result != SUCCESS && attempts < 3) {
@@ -182,12 +182,12 @@ implementation {
         attempts++;
       }
     } else {
-      call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL, chosen);
+      // call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL, chosen);
       result = FAIL;
       while (result != SUCCESS && attempts < 100) {
         result = call RadioChannel2.setChannel(chosen);
         if (result == EALREADY) {
-          call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL_OK, chosen);
+          // call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL_OK, chosen);
           result = SUCCESS;
         }
         if (result != SUCCESS && attempts < 300) {
@@ -368,13 +368,13 @@ implementation {
   }
 
   event void RadioChannel1.setChannelDone() {
-    uint8_t channel = call RadioChannel1.getChannel();
-    call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL_OK, channel);
+    // uint8_t channel = call RadioChannel1.getChannel();
+    // call SerialLogger.log(LOG_SET_RADIO_1_CHANNEL_OK, channel);
   }
 
   event void RadioChannel2.setChannelDone() {
-    uint8_t channel = call RadioChannel2.getChannel();
-    call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL_OK, channel);
+    // uint8_t channel = call RadioChannel2.getChannel();
+    // call SerialLogger.log(LOG_SET_RADIO_2_CHANNEL_OK, channel);
   }
 
 }

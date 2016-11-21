@@ -10,10 +10,13 @@ implementation {
   App.InitTimer -> InitTimerC;
   components new TimerMilliC() as SendTimerC;
   App.SendTimer -> SendTimerC;
-  components new TimerMilliC() as StopTimerC;
-  App.StopTimer -> StopTimerC;
+  components new TimerMilliC() as TestTimerC;
+  App.TestTimer -> TestTimerC;
   components new TimerMilliC() as FinishTimerC;
   App.FinishTimer -> FinishTimerC;
+
+  components new PoolC(message_t, 10);
+  App.MessagePool -> PoolC;
 
   components SerialLoggerC;
   App.SerialControl -> SerialLoggerC;
@@ -32,5 +35,6 @@ implementation {
   App.MpdrSend -> MpdrC;
   App.MpdrReceive -> MpdrC;
   App.MpdrPacket -> MpdrC;
+  App.MpdrStats -> MpdrC;
 
 }

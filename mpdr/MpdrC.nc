@@ -7,6 +7,7 @@ configuration MpdrC {
     interface AMSend;
     interface Receive;
     interface Packet;
+    interface MpdrStats;
   }
 }
 
@@ -17,4 +18,5 @@ implementation {
   AMSend = MpdrP;
   Receive = MpdrP;
   Packet = MpdrP;
+  MpdrStats = MpdrP;
 }

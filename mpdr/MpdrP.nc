@@ -6,6 +6,7 @@ configuration MpdrP {
     interface AMSend;
     interface Receive;
     interface Packet;
+    interface MpdrStats;
   }
 }
 
@@ -15,6 +16,7 @@ implementation {
   AMSend = Forwarder;
   Receive = Forwarder;
   Packet = Forwarder;
+  MpdrStats = Forwarder;
 
   components new MpdrRoutingEngineP() as Router;
   StdControl = Router;
@@ -33,7 +35,7 @@ implementation {
   Forwarder.Radio1Ack -> RF231ActiveMessageC;
   Forwarder.Radio2Ack -> RF212ActiveMessageC;
 
-  components new PoolC(message_t, 100);
+  components new PoolC(message_t, 90);
   components new QueueC(message_t*, 100) as Radio1Queue;
   components new QueueC(message_t*, 100) as Radio2Queue;
 
