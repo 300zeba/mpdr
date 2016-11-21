@@ -43,6 +43,10 @@ implementation {
   Forwarder.Radio1Queue -> Radio1Queue;
   Forwarder.Radio2Queue -> Radio2Queue;
 
+  components LocalTimeMilliC;
+
+  Forwarder.LocalTime -> LocalTimeMilliC;
+
   Router.RoutingSend1 -> RF231ActiveMessageC.AMSend[23];
   Router.RoutingSend2 -> RF212ActiveMessageC.AMSend[23];
   Router.RoutingAck -> RF231ActiveMessageC;

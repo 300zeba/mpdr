@@ -5,7 +5,7 @@
 #define TEST_DELAY 10000
 #define FINISH_TIME 20000
 #define TEST_DURATION 30000
-#define NUM_PATHS 1
+#define NUM_PATHS 2
 
 #define TEST_NON_STOP 1
 #define TEST_PERIODIC 0
@@ -267,6 +267,7 @@ implementation {
   }
 
   event void FinishTimer.fired() {
+    uint32_t radioTime;
     call SerialLogger.log(LOG_TEST_NUMBER, testCounter);
     testCounter++;
     if (TOS_NODE_ID == sourceNode) {
@@ -282,6 +283,10 @@ implementation {
     }
     elapsedTime = endTime - startTime;
     call SerialLogger.log(LOG_ELAPSED_TIME, elapsedTime);
+    radioTime = call MpdrStats.getTimeRadio1();
+    call SerialLogger.log(LOG_RADIO_1_TIME, radioTime);
+    radioTime = call MpdrStats.getTimeRadio2();
+    call SerialLogger.log(LOG_RADIO_2_TIME, radioTime);
     call SerialLogger.log(LOG_MESSAGE_SIZE, sizeof(message_t));
     call SerialLogger.log(LOG_PAYLOAD_SIZE, sizeof(mpdr_test_msg_t));
     call MpdrStats.clear();

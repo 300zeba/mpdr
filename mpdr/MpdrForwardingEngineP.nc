@@ -23,6 +23,7 @@ generic module MpdrForwardingEngineP() {
     interface Queue<message_t*> as Radio1Queue;
     interface Queue<message_t*> as Radio2Queue;
     interface SerialLogger;
+    interface LocalTime<TMilli>;
   }
 }
 
@@ -34,11 +35,15 @@ implementation {
   bool requireAck = FALSE;
 
   // Stats
-  uint16_t statSentRadio1;
-  uint16_t statSentRadio2;
-  uint16_t statReceivedRadio1;
-  uint16_t statReceivedRadio2;
+  uint16_t statSentRadio1 = 0;
+  uint16_t statSentRadio2 = 0;
+  uint16_t statReceivedRadio1 = 0;
+  uint16_t statReceivedRadio2 = 0;
   uint16_t statDropped = 0;
+  uint32_t statStartTime1 = 0;
+  uint32_t statStartTime2 = 0;
+  uint32_t statEndTime1 = 0;
+  uint32_t statEndTime2 = 0;
 
   error_t sendRadio1() {
     message_t* msg;
@@ -67,6 +72,10 @@ implementation {
       call SerialLogger.log(LOG_RADIO_1_SEND_RESULT, result);
       call Radio1Queue.dequeue();
     }
+    if (statStartTime1 == 0) {
+      statStartTime1 = call LocalTime.get();
+    }
+    statEndTime1 = call LocalTime.get();
     return result;
   }
 
@@ -97,6 +106,10 @@ implementation {
       call SerialLogger.log(LOG_RADIO_2_SEND_RESULT, result);
       call Radio2Queue.dequeue();
     }
+    if (statStartTime2 == 0) {
+      statStartTime2 = call LocalTime.get();
+    }
+    statEndTime2 = call LocalTime.get();
     return result;
   }
 
@@ -176,6 +189,11 @@ implementation {
 
     statReceivedRadio1++;
 
+    if (statStartTime1 == 0) {
+      statStartTime1 = call LocalTime.get();
+    }
+    statEndTime1 = call LocalTime.get();
+
     if (msg_hdr->destination != TOS_NODE_ID) {
       /*
         Forward message
@@ -222,6 +240,11 @@ implementation {
     call SerialLogger.log(LOG_RECEIVED_RADIO_2_SEQNO, *seqno);*/
 
     statReceivedRadio2++;
+
+    if (statStartTime2 == 0) {
+      statStartTime2 = call LocalTime.get();
+    }
+    statEndTime2 = call LocalTime.get();
 
     if (msg_hdr->destination != TOS_NODE_ID) {
       /*
@@ -375,12 +398,22 @@ implementation {
     return statDropped;
   }
 
+  command uint32_t MpdrStats.getTimeRadio1() {
+    return statEndTime1 - statStartTime1;
+  }
+
+  command uint32_t MpdrStats.getTimeRadio2() {
+    return statEndTime2 - statStartTime2;
+  }
+
   command void MpdrStats.clear() {
     statSentRadio1 = 0;
     statSentRadio2 = 0;
     statReceivedRadio1 = 0;
     statReceivedRadio2 = 0;
     statDropped = 0;
+    statStartTime1 = 0;
+    statStartTime2 = 0;
   }
 
 }

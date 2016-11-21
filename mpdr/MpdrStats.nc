@@ -10,6 +10,10 @@ interface MpdrStats {
 
   command uint16_t getDropped();
 
+  command uint32_t getTimeRadio1();
+
+  command uint32_t getTimeRadio2();
+
   command void clear();
 
 }

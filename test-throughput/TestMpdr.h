@@ -55,6 +55,8 @@ enum {
   LOG_TEST_TIMER_FIRED,
   LOG_QUEUE_1_ERROR,
   LOG_QUEUE_2_ERROR,
+  LOG_RADIO_1_TIME,
+  LOG_RADIO_2_TIME,
 };
 
 typedef nx_struct mpdr_test_msg {
