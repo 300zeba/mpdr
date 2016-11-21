@@ -1,7 +1,7 @@
 #ifndef TEST_RECEIVER_H
 #define TEST_RECEIVER_H
 
-#include <AM.h>
+#define MSG_SIZE 94
 
 enum {
   LOG_SERIAL_START_ATTEMPTS,
@@ -29,9 +29,10 @@ enum {
 };
 
 typedef nx_struct receiver_msg {
-  nx_am_addr_t source;
-  nx_am_addr_t destination;
+  nx_uint16_t source;
+  nx_uint16_t destination;
   nx_uint16_t seqno;
+  nx_uint8_t data[MSG_SIZE];
 } receiver_msg_t;
 
 #endif
