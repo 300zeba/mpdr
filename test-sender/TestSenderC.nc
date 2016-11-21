@@ -5,8 +5,8 @@
 #define RECEIVER2 6
 
 #define DEF_NUM_RADIOS 1
-#define NON_STOP_SEND 0
-#define SEND_PERIOD 4
+#define NON_STOP_SEND 1
+#define SEND_PERIOD 2
 #define NUM_MSGS 1000
 #define END_TIME 0
 #define FINISH_TIME 60000
@@ -75,6 +75,7 @@ implementation {
       radio = 2;
     } else {
       call SerialLogger.log(LOG_RADIOS_BUSY_ERROR, 0);
+      return;
     }
     if (radio == 1) {
       msg = call Radio1Send.getPayload(&msgBuffer1, sizeof(test_msg_t));
@@ -87,7 +88,7 @@ implementation {
       eval = call Radio1Send.send(RECEIVER1, &msgBuffer1, sizeof(test_msg_t));
       if (eval == SUCCESS) {
         // call SerialLogger.log(LOG_RADIO_1_SEND, radio1Total);
-        // radio1Busy = TRUE;
+        radio1Busy = TRUE;
         radio1Total++;
       } else if (eval == EBUSY) {
         ebusy1Count++;
@@ -105,7 +106,7 @@ implementation {
       eval = call Radio2Send.send(RECEIVER2, &msgBuffer2, sizeof(test_msg_t));
       if (eval == SUCCESS) {
         // call SerialLogger.log(LOG_RADIO_2_SEND, radio2Total);
-        // radio2Busy = TRUE;
+        radio2Busy = TRUE;
         radio2Total++;
       } else if (eval == EBUSY) {
         ebusy2Count++;
