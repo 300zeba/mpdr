@@ -57,6 +57,10 @@ enum {
   LOG_QUEUE_2_ERROR,
   LOG_RADIO_1_TIME,
   LOG_RADIO_2_TIME,
+  LOG_RETRANSMISSIONS,
+  LOG_DROPPED,
+  LOG_MAX_QUEUE_1,
+  LOG_MAX_QUEUE_2,
 };
 
 typedef nx_struct mpdr_test_msg {
