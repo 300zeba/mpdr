@@ -1,27 +1,19 @@
 interface MpdrStats {
 
-  command uint16_t getSentRadio1();
-
-  command uint16_t getSentRadio2();
-
-  command uint16_t getReceivedRadio1();
-
-  command uint16_t getReceivedRadio2();
-
-  command uint16_t getDropped();
-
-  command uint32_t getTimeRadio1();
-
-  command uint32_t getTimeRadio2();
-
-  command uint16_t getRetransmissions();
-
-  command uint16_t getMaxQueueSize1();
-
-  command uint16_t getMaxQueueSize2();
-
-  command uint16_t getDuplicated();
-
   command void clear();
+  command uint16_t getSentRadio1();
+  command uint16_t getSentRadio2();
+  command uint16_t getReceivedRadio1();
+  command uint16_t getReceivedRadio2();
+  command uint16_t getDropped1();
+  command uint16_t getDropped2();
+  command uint32_t getTimeRadio1();
+  command uint32_t getTimeRadio2();
+  command uint16_t getRetransmissions1();
+  command uint16_t getRetransmissions2();
+  command uint16_t getMaxQueueSize1();
+  command uint16_t getMaxQueueSize2();
+  command uint16_t getDuplicated1();
+  command uint16_t getDuplicated2();
 
 }

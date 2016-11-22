@@ -29,14 +29,17 @@ generic module MpdrForwardingEngineP() {
 
 implementation {
 
-  bool radio1Busy = FALSE;
-  bool radio2Busy = FALSE;
   uint8_t radio = 1;
   bool requireAck = TRUE;
-  uint8_t numRetransmissions = 0;
   uint8_t maxRetransmissions = 3;
-  bool retransmitting = FALSE;
   uint16_t nextDsn = 0;
+
+  bool radio1Busy = FALSE;
+  bool radio2Busy = FALSE;
+  bool retransmitting1 = FALSE;
+  bool retransmitting2 = FALSE;
+  uint8_t numRetransmissions1 = 0;
+  uint8_t numRetransmissions2 = 0;
   uint16_t lastDsn1 = 0;
   uint16_t lastDsn2 = 0;
 
@@ -45,15 +48,18 @@ implementation {
   uint16_t statSentRadio2 = 0;
   uint16_t statReceivedRadio1 = 0;
   uint16_t statReceivedRadio2 = 0;
-  uint16_t statDropped = 0;
+  uint16_t statDropped1 = 0;
+  uint16_t statDropped2 = 0;
   uint32_t statStartTime1 = 0;
   uint32_t statStartTime2 = 0;
   uint32_t statEndTime1 = 0;
   uint32_t statEndTime2 = 0;
-  uint16_t statRetransmissions = 0;
+  uint16_t statRetransmissions1 = 0;
+  uint16_t statRetransmissions2 = 0;
   uint16_t statMaxQueueSize1 = 0;
   uint16_t statMaxQueueSize2 = 0;
-  uint16_t statDuplicated = 0;
+  uint16_t statDuplicated1 = 0;
+  uint16_t statDuplicated2 = 0;
 
   error_t sendRadio1() {
     message_t* msg;
@@ -81,11 +87,12 @@ implementation {
     if (result == SUCCESS) {
       // call Radio1Queue.dequeue();
       radio1Busy = TRUE;
-      if (!retransmitting) {
+      if (!retransmitting1) {
         statSentRadio1++;
       }
     } else {
       // Drop the packet for now
+      statDropped1++;
       call SerialLogger.log(LOG_RADIO_1_SEND_RESULT, result);
       call Radio1Queue.dequeue();
     }
@@ -122,11 +129,12 @@ implementation {
     if (result == SUCCESS) {
       // call Radio2Queue.dequeue();
       radio2Busy = TRUE;
-      if (!retransmitting) {
+      if (!retransmitting2) {
         statSentRadio2++;
       }
     } else {
       // Drop the packet for now
+      statDropped2++;
       call SerialLogger.log(LOG_RADIO_2_SEND_RESULT, result);
       call Radio2Queue.dequeue();
     }
@@ -216,7 +224,7 @@ implementation {
     call SerialLogger.log(LOG_RECEIVED_RADIO_1_SEQNO, *seqno);*/
 
     if (msg_hdr->dsn == lastDsn1) {
-      statDuplicated++;
+      statDuplicated1++;
       return msg;
     }
 
@@ -234,8 +242,8 @@ implementation {
       */
       send_msg = call MessagePool.get();
       if (send_msg == NULL) {
-        statDropped++;
-        call SerialLogger.log(LOG_DROP_COUNT, statDropped);
+        statDropped2++;
+        call SerialLogger.log(LOG_DROP_COUNT, statDropped2);
         return msg;
       }
       memcpy(send_msg, msg, sizeof(message_t));
@@ -274,7 +282,7 @@ implementation {
     call SerialLogger.log(LOG_RECEIVED_RADIO_2_SEQNO, *seqno);*/
 
     if (msg_hdr->dsn == lastDsn2) {
-      statDuplicated++;
+      statDuplicated2++;
       return msg;
     }
 
@@ -292,8 +300,8 @@ implementation {
       */
       send_msg = call MessagePool.get();
       if (send_msg == NULL) {
-        statDropped++;
-        call SerialLogger.log(LOG_DROP_COUNT, statDropped);
+        statDropped1++;
+        call SerialLogger.log(LOG_DROP_COUNT, statDropped1);
         return msg;
       }
       memcpy(send_msg, msg, sizeof(message_t));
@@ -321,29 +329,35 @@ implementation {
   }
 
   event void Radio1Send.sendDone(message_t* msg, error_t error) {
+    message_t* queue_head;
     mpdr_msg_hdr_t* msg_hdr;
     radio1Busy = FALSE;
+    queue_head = call Radio1Queue.head();
+    if (queue_head != msg) {
+      call SerialLogger.log(LOG_QUEUE_HEAD_ERROR_1, 0);
+      return;
+    }
     if (requireAck) {
       if (!call Radio1Ack.wasAcked(msg)) {
-        if (!retransmitting) {
-          retransmitting = TRUE;
-          statRetransmissions++;
-          numRetransmissions++;
+        if (!retransmitting1) {
+          retransmitting1 = TRUE;
+          statRetransmissions1++;
+          numRetransmissions1++;
           sendRadio1();
           return;
         } else {
-          if (numRetransmissions < maxRetransmissions) {
-            statRetransmissions++;
-            numRetransmissions++;
+          if (numRetransmissions1 < maxRetransmissions) {
+            statRetransmissions1++;
+            numRetransmissions1++;
             sendRadio1();
             return;
           } else {
-            statDropped++;
+            statDropped1++;
           }
         }
       }
-      numRetransmissions = 0;
-      retransmitting = FALSE;
+      numRetransmissions1 = 0;
+      retransmitting1 = FALSE;
     }
     call Radio1Queue.dequeue();
     msg_hdr = call Radio1Send.getPayload(msg, sizeof(mpdr_msg_hdr_t));
@@ -361,29 +375,35 @@ implementation {
   }
 
   event void Radio2Send.sendDone(message_t* msg, error_t error) {
+    message_t* queue_head;
     mpdr_msg_hdr_t* msg_hdr;
     radio2Busy = FALSE;
+    queue_head = call Radio2Queue.head();
+    if (queue_head != msg) {
+      call SerialLogger.log(LOG_QUEUE_HEAD_ERROR_2, 0);
+      return;
+    }
     if (requireAck) {
       if (!call Radio2Ack.wasAcked(msg)) {
-        if (!retransmitting) {
-          retransmitting = TRUE;
-          statRetransmissions++;
-          numRetransmissions++;
+        if (!retransmitting2) {
+          retransmitting2 = TRUE;
+          statRetransmissions2++;
+          numRetransmissions2++;
           sendRadio2();
           return;
         } else {
-          if (numRetransmissions < maxRetransmissions) {
-            statRetransmissions++;
-            numRetransmissions++;
+          if (numRetransmissions2 < maxRetransmissions) {
+            statRetransmissions2++;
+            numRetransmissions2++;
             sendRadio2();
             return;
           } else {
-            statDropped++;
+            statDropped2++;
           }
         }
       }
-      numRetransmissions = 0;
-      retransmitting = FALSE;
+      numRetransmissions2 = 0;
+      retransmitting2 = FALSE;
     }
     call Radio2Queue.dequeue();
     msg_hdr = call Radio2Send.getPayload(msg, sizeof(mpdr_msg_hdr_t));
@@ -480,8 +500,12 @@ implementation {
     return statReceivedRadio2;
   }
 
-  command uint16_t MpdrStats.getDropped() {
-    return statDropped;
+  command uint16_t MpdrStats.getDropped1() {
+    return statDropped1;
+  }
+
+  command uint16_t MpdrStats.getDropped2() {
+    return statDropped2;
   }
 
   command uint32_t MpdrStats.getTimeRadio1() {
@@ -492,8 +516,12 @@ implementation {
     return statEndTime2 - statStartTime2;
   }
 
-  command uint16_t MpdrStats.getRetransmissions() {
-    return statRetransmissions;
+  command uint16_t MpdrStats.getRetransmissions1() {
+    return statRetransmissions1;
+  }
+
+  command uint16_t MpdrStats.getRetransmissions2() {
+    return statRetransmissions2;
   }
 
   command uint16_t MpdrStats.getMaxQueueSize1() {
@@ -504,8 +532,12 @@ implementation {
     return statMaxQueueSize2;
   }
 
-  command uint16_t MpdrStats.getDuplicated() {
-    return statDuplicated;
+  command uint16_t MpdrStats.getDuplicated1() {
+    return statDuplicated1;
+  }
+
+  command uint16_t MpdrStats.getDuplicated2() {
+    return statDuplicated2;
   }
 
   command void MpdrStats.clear() {
@@ -513,13 +545,16 @@ implementation {
     statSentRadio2 = 0;
     statReceivedRadio1 = 0;
     statReceivedRadio2 = 0;
-    statDropped = 0;
+    statDropped1 = 0;
+    statDropped2 = 0;
     statStartTime1 = 0;
     statStartTime2 = 0;
-    statRetransmissions = 0;
+    statRetransmissions1 = 0;
+    statRetransmissions2 = 0;
     statMaxQueueSize1 = 0;
     statMaxQueueSize2 = 0;
-    statDuplicated = 0;
+    statDuplicated1 = 0;
+    statDuplicated2 = 0;
   }
 
 }
