@@ -1,7 +1,7 @@
 #ifndef TEST_MPDR_H
 #define TEST_MPDR_H
 
-#define MSG_SIZE 98
+#define MSG_SIZE 96
 
 enum {
   LOG_INITIALIZED,
@@ -61,6 +61,7 @@ enum {
   LOG_DROPPED,
   LOG_MAX_QUEUE_1,
   LOG_MAX_QUEUE_2,
+  LOG_DUPLICATED,
 };
 
 typedef nx_struct mpdr_test_msg {

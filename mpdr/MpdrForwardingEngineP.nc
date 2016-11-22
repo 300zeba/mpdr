@@ -32,8 +32,13 @@ implementation {
   bool radio1Busy = FALSE;
   bool radio2Busy = FALSE;
   uint8_t radio = 1;
-  bool requireAck = FALSE;
-  bool retransmitted = FALSE;
+  bool requireAck = TRUE;
+  uint8_t numRetransmissions = 0;
+  uint8_t maxRetransmissions = 3;
+  bool retransmitting = FALSE;
+  uint16_t nextDsn = 0;
+  uint16_t lastDsn1 = 0;
+  uint16_t lastDsn2 = 0;
 
   // Stats
   uint16_t statSentRadio1 = 0;
@@ -48,6 +53,7 @@ implementation {
   uint16_t statRetransmissions = 0;
   uint16_t statMaxQueueSize1 = 0;
   uint16_t statMaxQueueSize2 = 0;
+  uint16_t statDuplicated = 0;
 
   error_t sendRadio1() {
     message_t* msg;
@@ -75,7 +81,7 @@ implementation {
     if (result == SUCCESS) {
       // call Radio1Queue.dequeue();
       radio1Busy = TRUE;
-      if (!retransmitted) {
+      if (!retransmitting) {
         statSentRadio1++;
       }
     } else {
@@ -116,7 +122,7 @@ implementation {
     if (result == SUCCESS) {
       // call Radio2Queue.dequeue();
       radio2Busy = TRUE;
-      if (!retransmitted) {
+      if (!retransmitting) {
         statSentRadio2++;
       }
     } else {
@@ -153,6 +159,8 @@ implementation {
       msg_hdr->source = TOS_NODE_ID;
       msg_hdr->destination = addr;
       msg_hdr->next_hop = next1;
+      msg_hdr->dsn = nextDsn;
+      nextDsn++;
       result = call Radio1Queue.enqueue(msg);
       if (result == SUCCESS) {
         result = sendRadio1();
@@ -167,6 +175,8 @@ implementation {
       msg_hdr->source = TOS_NODE_ID;
       msg_hdr->destination = addr;
       msg_hdr->next_hop = next2;
+      msg_hdr->dsn = nextDsn;
+      nextDsn++;
       result = call Radio2Queue.enqueue(msg);
       if (result == SUCCESS) {
         result = sendRadio2();
@@ -205,6 +215,12 @@ implementation {
     /*uint16_t* seqno = (uint16_t*) (payload + sizeof(mpdr_msg_hdr_t) + 1);
     call SerialLogger.log(LOG_RECEIVED_RADIO_1_SEQNO, *seqno);*/
 
+    if (msg_hdr->dsn == lastDsn1) {
+      statDuplicated++;
+      return msg;
+    }
+
+    lastDsn1 = msg_hdr->dsn;
     statReceivedRadio1++;
 
     if (statStartTime1 == 0) {
@@ -257,6 +273,12 @@ implementation {
     /*uint16_t* seqno = (uint16_t*) (payload + sizeof(mpdr_msg_hdr_t) + 1);
     call SerialLogger.log(LOG_RECEIVED_RADIO_2_SEQNO, *seqno);*/
 
+    if (msg_hdr->dsn == lastDsn2) {
+      statDuplicated++;
+      return msg;
+    }
+
+    lastDsn2 = msg_hdr->dsn;
     statReceivedRadio2++;
 
     if (statStartTime2 == 0) {
@@ -303,16 +325,25 @@ implementation {
     radio1Busy = FALSE;
     if (requireAck) {
       if (!call Radio1Ack.wasAcked(msg)) {
-        if (!retransmitted) {
-          retransmitted = TRUE;
+        if (!retransmitting) {
+          retransmitting = TRUE;
           statRetransmissions++;
+          numRetransmissions++;
           sendRadio1();
           return;
         } else {
-          statDropped++;
+          if (numRetransmissions < maxRetransmissions) {
+            statRetransmissions++;
+            numRetransmissions++;
+            sendRadio1();
+            return;
+          } else {
+            statDropped++;
+          }
         }
       }
-      retransmitted = FALSE;
+      numRetransmissions = 0;
+      retransmitting = FALSE;
     }
     call Radio1Queue.dequeue();
     msg_hdr = call Radio1Send.getPayload(msg, sizeof(mpdr_msg_hdr_t));
@@ -334,16 +365,25 @@ implementation {
     radio2Busy = FALSE;
     if (requireAck) {
       if (!call Radio2Ack.wasAcked(msg)) {
-        if (!retransmitted) {
-          retransmitted = TRUE;
+        if (!retransmitting) {
+          retransmitting = TRUE;
           statRetransmissions++;
+          numRetransmissions++;
           sendRadio2();
           return;
         } else {
-          statDropped++;
+          if (numRetransmissions < maxRetransmissions) {
+            statRetransmissions++;
+            numRetransmissions++;
+            sendRadio2();
+            return;
+          } else {
+            statDropped++;
+          }
         }
       }
-      retransmitted = FALSE;
+      numRetransmissions = 0;
+      retransmitting = FALSE;
     }
     call Radio2Queue.dequeue();
     msg_hdr = call Radio2Send.getPayload(msg, sizeof(mpdr_msg_hdr_t));
@@ -464,6 +504,10 @@ implementation {
     return statMaxQueueSize2;
   }
 
+  command uint16_t MpdrStats.getDuplicated() {
+    return statDuplicated;
+  }
+
   command void MpdrStats.clear() {
     statSentRadio1 = 0;
     statSentRadio2 = 0;
@@ -475,6 +519,7 @@ implementation {
     statRetransmissions = 0;
     statMaxQueueSize1 = 0;
     statMaxQueueSize2 = 0;
+    statDuplicated = 0;
   }
 
 }

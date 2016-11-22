@@ -20,6 +20,8 @@ interface MpdrStats {
 
   command uint16_t getMaxQueueSize2();
 
+  command uint16_t getDuplicated();
+
   command void clear();
 
 }

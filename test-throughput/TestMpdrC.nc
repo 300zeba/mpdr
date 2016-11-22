@@ -1,7 +1,7 @@
 #include "TestMpdr.h"
 #include "../serial-logger/SerialLogger.h"
 
-#define NUM_TESTS 3
+#define NUM_TESTS 1
 #define TEST_DELAY 10000
 #define FINISH_TIME 20000
 #define TEST_DURATION 30000
@@ -9,7 +9,7 @@
 
 #define TEST_NON_STOP 1
 #define TEST_PERIODIC 0
-#define NUM_MSGS 1000
+#define NUM_MSGS 100
 #define SEND_PERIOD 5
 
 #define INIT_TIME 10000
@@ -293,8 +293,10 @@ implementation {
     call SerialLogger.log(LOG_MAX_QUEUE_1, data);
     data = call MpdrStats.getMaxQueueSize2();
     call SerialLogger.log(LOG_MAX_QUEUE_2, data);
-    call SerialLogger.log(LOG_MESSAGE_SIZE, sizeof(message_t));
-    call SerialLogger.log(LOG_PAYLOAD_SIZE, sizeof(mpdr_test_msg_t));
+    data = call MpdrStats.getDuplicated();
+    call SerialLogger.log(LOG_DUPLICATED, data);
+    /*call SerialLogger.log(LOG_MESSAGE_SIZE, sizeof(message_t));
+    call SerialLogger.log(LOG_PAYLOAD_SIZE, sizeof(mpdr_test_msg_t));*/
     call MpdrStats.clear();
     startTime = 0;
     sendCount = 0;
