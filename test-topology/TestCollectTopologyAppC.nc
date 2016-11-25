@@ -17,13 +17,15 @@ implementation {
   App.RadiosControl -> DualRadioControlC;
 
   components new DualLinkEstimatorP() as Estimator;
-  components new TimerMilliC() as EstimatorTimer;
+  components new TimerMilliC() as EstimatorTimer1;
+  components new TimerMilliC() as EstimatorTimer2;
   Estimator.Random -> RandomC;
   Estimator.Radio1Send -> RF231ActiveMessageC.AMSend[24];
   Estimator.Radio2Send -> RF212ActiveMessageC.AMSend[24];
   Estimator.Radio1Receive -> RF231ActiveMessageC.Receive[24];
   Estimator.Radio2Receive -> RF212ActiveMessageC.Receive[24];
-  Estimator.Timer -> EstimatorTimer;
+  Estimator.Radio1Timer -> EstimatorTimer1;
+  Estimator.Radio2Timer -> EstimatorTimer2;
   App.EstimatorControl -> Estimator;
   App.Estimator -> Estimator;
 

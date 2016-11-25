@@ -1,5 +1,5 @@
 import re
-import networkx as nx
+# import networkx as nx
 # import matplotlib.pyplot as plt
 import argparse
 
@@ -103,19 +103,19 @@ def grid_layout(G, width, height):
     return layout
 
 
-def create_nx_digraph(nodes, links, filename):
-    G = nx.DiGraph()
-    G.add_nodes_from(nodes)
-    G.add_edges_from(links.keys())
-    for key, value in links.iteritems():
-        G[key[0]][key[1]]['weight'] = (100-value) if (100-value) >= 1 else 1
-    isolates = nx.isolates(G)
-    G.remove_nodes_from(isolates)
-    # pos = grid_layout(G, 10, 10)
-    pos = nx.spring_layout(G)
-    nx.draw_networkx_nodes(G, pos)
-    nx.draw_networkx_edges(G, pos, arrows=False)
-    nx.draw_networkx_labels(G, pos)
+# def create_nx_digraph(nodes, links, filename):
+#     G = nx.DiGraph()
+#     G.add_nodes_from(nodes)
+#     G.add_edges_from(links.keys())
+#     for key, value in links.iteritems():
+#         G[key[0]][key[1]]['weight'] = (100-value) if (100-value) >= 1 else 1
+#     isolates = nx.isolates(G)
+#     G.remove_nodes_from(isolates)
+#     # pos = grid_layout(G, 10, 10)
+#     pos = nx.spring_layout(G)
+#     nx.draw_networkx_nodes(G, pos)
+#     nx.draw_networkx_edges(G, pos, arrows=False)
+#     nx.draw_networkx_labels(G, pos)
     # plt.savefig(filename)
     # plt.show()
 

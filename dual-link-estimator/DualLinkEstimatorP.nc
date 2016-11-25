@@ -10,7 +10,8 @@ generic module DualLinkEstimatorP() {
     interface AMSend as Radio2Send;
     interface Receive as Radio1Receive;
     interface Receive as Radio2Receive;
-    interface Timer<TMilli>;
+    interface Timer<TMilli> as Radio1Timer;
+    interface Timer<TMilli> as Radio2Timer;
     interface Random;
   }
 }
@@ -32,6 +33,9 @@ implementation {
   void sendMessage1() {
     message_t* msg;
     estimator_msg_t* payload;
+    if (NUM_MSGS > 0 && seqno1 >= NUM_MSGS)  {
+      sending1 = FALSE;
+    }
     if (!sending1) {
       return;
     }
@@ -46,6 +50,9 @@ implementation {
   void sendMessage2() {
     message_t* msg;
     estimator_msg_t* payload;
+    if (NUM_MSGS > 0 && seqno2 >= NUM_MSGS) {
+      sending2 = FALSE;
+    }
     if (!sending2) {
       return;
     }
@@ -57,12 +64,18 @@ implementation {
     call Radio2Send.send(AM_BROADCAST_ADDR, msg, sizeof(estimator_msg_t));
   }
 
+  uint16_t getNewInterval() {
+    return call Random.rand16() % 100 + 400;
+  }
+
   command error_t StdControl.start() {
     uint16_t newInterval;
     sending1 = TRUE;
     sending2 = TRUE;
-    newInterval = call Random.rand16() % 500 + 500;
-    call Timer.startOneShot(newInterval);
+    newInterval = getNewInterval();
+    call Radio1Timer.startOneShot(newInterval);
+    newInterval = getNewInterval();
+    call Radio2Timer.startOneShot(newInterval);
     return SUCCESS;
   }
 
@@ -72,13 +85,21 @@ implementation {
     return SUCCESS;
   }
 
-  event void Timer.fired() {
+  event void Radio1Timer.fired() {
     uint16_t newInterval;
     sendMessage1();
+    if (sending1) {
+      newInterval = getNewInterval();
+      call Radio1Timer.startOneShot(newInterval);
+    }
+  }
+
+  event void Radio2Timer.fired() {
+    uint16_t newInterval;
     sendMessage2();
-    if (sending1 || sending2) {
-      newInterval = call Random.rand16() % 500;
-      call Timer.startOneShot(newInterval);
+    if (sending2) {
+      newInterval = getNewInterval();
+      call Radio2Timer.startOneShot(newInterval);
     }
   }
 
@@ -139,7 +160,11 @@ implementation {
       if (table->neighbors[i].address == neighbor) {
         received = table->neighbors[i].received;
         sent = table->neighbors[i].sent;
-        return 100 * received / sent;
+        if (NUM_MSGS == 0) {
+          return 100 * received / sent;
+        } else {
+          return 100 * received / NUM_MSGS;
+        }
       }
     }
     return 0xFFFF;
