@@ -1,7 +1,7 @@
 #ifndef TEST_MPDR_H
 #define TEST_MPDR_H
 
-#define MSG_SIZE 96
+#define MSG_SIZE 107
 
 enum {
   LOG_INITIALIZED,

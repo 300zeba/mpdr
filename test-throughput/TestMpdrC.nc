@@ -4,11 +4,10 @@
 #define TEST_DELAY 10000
 #define FINISH_TIME 20000
 #define TEST_DURATION 30000
-#define NUM_PATHS 1
 
 #define TEST_NON_STOP 1
 #define TEST_PERIODIC 0
-#define NUM_MSGS 100
+#define NUM_MSGS 10
 #define SEND_PERIOD 5
 
 #define INIT_TIME 10000
@@ -40,140 +39,82 @@ module TestMpdrC {
 
 implementation {
 
-  uint8_t numPaths = NUM_PATHS;
-
   bool transmitting = FALSE;
 
   uint16_t sendCount = 0;
   uint16_t receivedCount = 0;
   uint8_t testCounter = 0;
 
-  // Paths' cost: 27
-  // Paths' len: 8
-  uint8_t destinationNode = 9;
-  uint8_t sourceNode = 1;
-  uint8_t sourceRoutes[2][3] = {
-    {5, 1, 1},
-    {3, 2, 2},
-  };
-  uint8_t relayLength = 6;
-  uint8_t relayNodes[6] = {5, 10, 3, 4, 6, 8, };
-  uint8_t relayRoutes[6][3] = {
-    {10, 2, 1},
-    {9, 1, 2},
-    {4, 1, 2},
-    {6, 2, 1},
-    {8, 1, 1},
-    {9, 2, 2},
+  uint8_t numPaths = 2;
+  uint8_t sourceNode = 77;
+  uint8_t destinationNode = 2;
+  uint8_t numHops = 4;
+  uint8_t hops[4][4] = {
+    {77, 78, 1, 1},
+    {77, 81, 2, 2},
+    {78, 2, 2, 1},
+    {81, 2, 1, 2},
   };
 
-  uint8_t getRelayIndex(uint8_t id) {
+  bool isRelay() {
     uint8_t i;
-    for (i = 0; i < relayLength; i++) {
-      if (id == relayNodes[i]) {
-        return i;
+    if (TOS_NODE_ID == sourceNode || TOS_NODE_ID == destinationNode) {
+      return FALSE;
+    }
+    for (i = 0; i < numHops; i++) {
+      if (TOS_NODE_ID == hops[i][0]) {
+        return TRUE;
       }
     }
-    return relayLength;
-  }
-
-  uint8_t getDestinationRadioChannel(uint8_t radio) {
-    uint8_t i;
-    for (i = 0; i < relayLength; i++) {
-      if (relayRoutes[i][0] == destinationNode && relayRoutes[i][1] == radio) {
-        return relayRoutes[i][2];
-      }
-    }
-    return 0;
-  }
-
-  uint8_t getRelayRadioChannel(uint8_t radio) {
-    uint8_t i;
-    for (i = 0; i < relayLength; i++) {
-      if (relayRoutes[i][0] == TOS_NODE_ID && relayRoutes[i][1] == radio) {
-        return relayRoutes[i][2];
-      }
-    }
-    for (i = 0; i < 2; i++) {
-      if (sourceRoutes[i][0] == TOS_NODE_ID && sourceRoutes[i][1] == radio) {
-        return sourceRoutes[i][2];
-      }
-    }
-    return 0;
+    return FALSE;
   }
 
   void initializeNode() {
-    uint8_t relay_i;
+    uint8_t i;
     uint8_t radio;
-    uint8_t channel1;
-    uint8_t channel2;
+    uint8_t channel;
     call SerialLogger.log(LOG_INITIALIZED, TOS_NODE_ID);
-    if (TOS_NODE_ID == destinationNode) {
-      call SerialLogger.log(LOG_DESTINATION_NODE, destinationNode);
-      channel1 = getDestinationRadioChannel(1);
-      channel2 = getDestinationRadioChannel(2);
-      call MpdrRouting.setRadioChannel(1, channel1);
-      call MpdrRouting.setRadioChannel(2, channel2);
-      call FinishTimer.startPeriodicAt(TEST_DELAY + FINISH_TIME, TEST_DURATION);
-    } else if (TOS_NODE_ID == sourceNode) {
+    for (i = 0; i < numHops; i++) {
+      if (TOS_NODE_ID == hops[i][0] || TOS_NODE_ID == hops[i][1]) {
+        radio = hops[i][2];
+        channel = hops[i][3];
+        call MpdrRouting.setRadioChannel(radio, channel);
+      }
+    }
+    if (TOS_NODE_ID == sourceNode) {
       call SerialLogger.log(LOG_SOURCE_NODE, sourceNode);
-      call MpdrRouting.addSendRoute(sourceNode, destinationNode,
-                                    sourceRoutes[0][0], sourceRoutes[0][1],
-                                    sourceRoutes[0][2]);
-      call MpdrRouting.addSendRoute(sourceNode, destinationNode,
-                                    sourceRoutes[1][0], sourceRoutes[1][1],
-                                    sourceRoutes[1][2]);
-      call MpdrRouting.setRadioChannel(sourceRoutes[0][1],
-                                       sourceRoutes[0][2]);
-      call MpdrRouting.setRadioChannel(sourceRoutes[1][1],
-                                       sourceRoutes[1][2]);
       call TestTimer.startPeriodicAt(TEST_DELAY, TEST_DURATION);
       call FinishTimer.startPeriodicAt(TEST_DELAY + FINISH_TIME, TEST_DURATION);
-    } else {
-      relay_i = getRelayIndex(TOS_NODE_ID);
-      if (relay_i < relayLength) {
-        call SerialLogger.log(LOG_RELAY_NODE, relay_i);
-        call MpdrRouting.addRoutingItem(sourceNode, destinationNode,
-                                        relayRoutes[relay_i][0],
-                                        relayRoutes[relay_i][1],
-                                        relayRoutes[relay_i][2]);
-        call MpdrRouting.setRadioChannel(relayRoutes[relay_i][1],
-                                         relayRoutes[relay_i][2]);
-        radio = (relayRoutes[relay_i][1] == 1)? 2: 1;
-        channel2 = getRelayRadioChannel(radio);
-        if (channel2 == 0) {
-          call SerialLogger.log(LOG_GET_RELAY_CHANNEL_ERROR, channel2);
-        }
-        call MpdrRouting.setRadioChannel(radio, channel2);
-        call FinishTimer.startPeriodicAt(TEST_DELAY + FINISH_TIME,
-                                         TEST_DURATION);
-      }
+    } else if (TOS_NODE_ID == destinationNode) {
+      call SerialLogger.log(LOG_DESTINATION_NODE, destinationNode);
+      call FinishTimer.startPeriodicAt(TEST_DELAY + FINISH_TIME, TEST_DURATION);
+    } else if (isRelay()){
+      call SerialLogger.log(LOG_RELAY_NODE, TOS_NODE_ID);
+      call FinishTimer.startPeriodicAt(TEST_DELAY + FINISH_TIME, TEST_DURATION);
     }
   }
 
   void sendMessage() {
-    uint8_t i;
     message_t* msg;
     mpdr_test_msg_t* payload;
+    uint8_t i;
     if (NUM_MSGS != 0 && sendCount >= NUM_MSGS) {
       transmitting = FALSE;
       return;
     }
-    // call SerialLogger.log(LOG_SENDING_SEQNO, sendCount);
     msg = call MessagePool.get();
     if (msg == NULL) {
-      call SerialLogger.log(LOG_MESSAGE_POOL_ERROR, 0);
       return;
     }
     payload = (mpdr_test_msg_t*) call MpdrPacket.getPayload(msg,
                                                        sizeof(mpdr_test_msg_t));
     payload->seqno = sendCount;
-    sendCount++;
     for (i = 0; i < MSG_SIZE; i++) {
       payload->data[i] = i;
     }
     call MpdrPacket.setPayloadLength(msg, sizeof(mpdr_test_msg_t));
     call MpdrSend.send(destinationNode, msg, sizeof(mpdr_test_msg_t));
+    sendCount++;
   }
 
   event void Boot.booted() {
@@ -282,8 +223,8 @@ implementation {
     call SerialLogger.log(LOG_DUPLICATED_1, data);
     data = call MpdrStats.getDuplicated2();
     call SerialLogger.log(LOG_DUPLICATED_2, data);
-    data = call MpdrPacket.maxPayloadLength();
-    call SerialLogger.log(LOG_MAX_PAYLOAD_LENGTH, data);
+    // data = call MpdrPacket.maxPayloadLength();
+    // call SerialLogger.log(LOG_MAX_PAYLOAD_LENGTH, data);
     call MpdrStats.clear();
     sendCount = 0;
     if (NUM_TESTS > 0 && testCounter >= NUM_TESTS) {
@@ -294,5 +235,3 @@ implementation {
 
   event void MpdrRouting.pathsReady(am_addr_t destination) {}
 }
-
-//Fix

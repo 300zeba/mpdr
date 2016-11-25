@@ -8,6 +8,10 @@ configuration MpdrP {
     interface Packet;
     interface MpdrStats;
   }
+  uses {
+    interface Pool<message_t>;
+    interface Queue<message_t*>;
+  }
 }
 
 implementation {
@@ -35,13 +39,8 @@ implementation {
   Forwarder.Radio1Ack -> RF231ActiveMessageC;
   Forwarder.Radio2Ack -> RF212ActiveMessageC;
 
-  components new PoolC(message_t, 90);
-  components new QueueC(message_t*, 100) as Radio1Queue;
-  components new QueueC(message_t*, 100) as Radio2Queue;
-
-  Forwarder.MessagePool -> PoolC;
-  Forwarder.Radio1Queue -> Radio1Queue;
-  Forwarder.Radio2Queue -> Radio2Queue;
+  Forwarder.Pool = Pool;
+  Forwarder.Queue = Queue;
 
   components LocalTimeMilliC;
 

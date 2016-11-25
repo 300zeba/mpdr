@@ -9,10 +9,18 @@ configuration MpdrC {
     interface Packet;
     interface MpdrStats;
   }
+  uses {
+    interface Pool<message_t>;
+    interface Queue<message_t*>;
+  }
 }
 
 implementation {
   components MpdrP;
+
+  MpdrP.Pool = Pool;
+  MpdrP.Queue = Queue;
+  
   StdControl = MpdrP;
   MpdrRouting = MpdrP;
   AMSend = MpdrP;

@@ -19,9 +19,8 @@ generic module MpdrForwardingEngineP() {
     interface PacketAcknowledgements as Radio2Ack;
 
     interface MpdrRouting as Routing;
-    interface Pool<message_t> as MessagePool;
-    interface Queue<message_t*> as Radio1Queue;
-    interface Queue<message_t*> as Radio2Queue;
+    interface Pool<message_t>;
+    interface Queue<message_t*>;
     interface SerialLogger;
     interface LocalTime<TMilli>;
   }
@@ -30,7 +29,7 @@ generic module MpdrForwardingEngineP() {
 implementation {
 
   uint8_t radio = 1;
-  bool requireAck = TRUE;
+  bool requireAck = FALSE;
   uint8_t maxRetransmissions = 3;
   uint16_t nextDsn = 0;
 
@@ -70,14 +69,14 @@ implementation {
     if (radio1Busy) {
       return EBUSY;
     }
-    if (call Radio1Queue.empty()) {
+    if (call Queue.empty()) {
       return FAIL;
     }
-    queue_size = call Radio1Queue.size();
+    queue_size = call Queue.size();
     if (queue_size > statMaxQueueSize1) {
       statMaxQueueSize1 = queue_size;
     }
-    msg = call Radio1Queue.head();
+    msg = call Queue.head();
     msg_hdr = call Radio1Send.getPayload(msg, sizeof(mpdr_msg_hdr_t));
     len = call Radio1Packet.payloadLength(msg);
     if (requireAck) {
@@ -85,7 +84,7 @@ implementation {
     }
     result = call Radio1Send.send(msg_hdr->next_hop, msg, len);
     if (result == SUCCESS) {
-      // call Radio1Queue.dequeue();
+      // call Queue.dequeue();
       radio1Busy = TRUE;
       if (!retransmitting1) {
         statSentRadio1++;
@@ -94,7 +93,7 @@ implementation {
       // Drop the packet for now
       statDropped1++;
       call SerialLogger.log(LOG_RADIO_1_SEND_RESULT, result);
-      call Radio1Queue.dequeue();
+      call Queue.dequeue();
     }
     if (statStartTime1 == 0) {
       statStartTime1 = call LocalTime.get();
@@ -112,14 +111,14 @@ implementation {
     if (radio2Busy) {
       return EBUSY;
     }
-    if (call Radio2Queue.empty()) {
+    if (call Queue.empty()) {
       return FAIL;
     }
-    queue_size = call Radio2Queue.size();
+    queue_size = call Queue.size();
     if (queue_size > statMaxQueueSize2) {
       statMaxQueueSize2 = queue_size;
     }
-    msg = call Radio2Queue.head();
+    msg = call Queue.head();
     msg_hdr = call Radio2Send.getPayload(msg, sizeof(mpdr_msg_hdr_t));
     len = call Radio2Packet.payloadLength(msg);
     if (requireAck) {
@@ -127,7 +126,7 @@ implementation {
     }
     result = call Radio2Send.send(msg_hdr->next_hop, msg, len);
     if (result == SUCCESS) {
-      // call Radio2Queue.dequeue();
+      // call Queue.dequeue();
       radio2Busy = TRUE;
       if (!retransmitting2) {
         statSentRadio2++;
@@ -136,7 +135,7 @@ implementation {
       // Drop the packet for now
       statDropped2++;
       call SerialLogger.log(LOG_RADIO_2_SEND_RESULT, result);
-      call Radio2Queue.dequeue();
+      call Queue.dequeue();
     }
     if (statStartTime2 == 0) {
       statStartTime2 = call LocalTime.get();
@@ -169,7 +168,7 @@ implementation {
       msg_hdr->next_hop = next1;
       msg_hdr->dsn = nextDsn;
       nextDsn++;
-      result = call Radio1Queue.enqueue(msg);
+      result = call Queue.enqueue(msg);
       if (result == SUCCESS) {
         result = sendRadio1();
       } else {
@@ -185,7 +184,7 @@ implementation {
       msg_hdr->next_hop = next2;
       msg_hdr->dsn = nextDsn;
       nextDsn++;
-      result = call Radio2Queue.enqueue(msg);
+      result = call Queue.enqueue(msg);
       if (result == SUCCESS) {
         result = sendRadio2();
       } else {
@@ -240,7 +239,7 @@ implementation {
       /*
         Forward message
       */
-      send_msg = call MessagePool.get();
+      send_msg = call Pool.get();
       if (send_msg == NULL) {
         statDropped2++;
         call SerialLogger.log(LOG_DROP_COUNT, statDropped2);
@@ -253,7 +252,7 @@ implementation {
       // send_msg_hdr->source = msg_hdr->source;
       // send_msg_hdr->destination = msg_hdr->destination;
       send_msg_hdr->next_hop = next_hop;
-      result = call Radio2Queue.enqueue(send_msg);
+      result = call Queue.enqueue(send_msg);
       if (result == SUCCESS) {
         sendRadio2();
       } else {
@@ -298,7 +297,7 @@ implementation {
       /*
         Forward message
       */
-      send_msg = call MessagePool.get();
+      send_msg = call Pool.get();
       if (send_msg == NULL) {
         statDropped1++;
         call SerialLogger.log(LOG_DROP_COUNT, statDropped1);
@@ -311,7 +310,7 @@ implementation {
       // send_msg_hdr->source = msg_hdr->source;
       // send_msg_hdr->destination = msg_hdr->destination;
       send_msg_hdr->next_hop = next_hop;
-      result = call Radio1Queue.enqueue(send_msg);
+      result = call Queue.enqueue(send_msg);
       if (result == SUCCESS) {
         sendRadio1();
       } else {
@@ -332,7 +331,7 @@ implementation {
     message_t* queue_head;
     mpdr_msg_hdr_t* msg_hdr;
     radio1Busy = FALSE;
-    queue_head = call Radio1Queue.head();
+    queue_head = call Queue.head();
     if (queue_head != msg) {
       call SerialLogger.log(LOG_QUEUE_HEAD_ERROR_1, 0);
       return;
@@ -359,7 +358,7 @@ implementation {
       numRetransmissions1 = 0;
       retransmitting1 = FALSE;
     }
-    call Radio1Queue.dequeue();
+    call Queue.dequeue();
     msg_hdr = call Radio1Send.getPayload(msg, sizeof(mpdr_msg_hdr_t));
     if (error != SUCCESS) {
       call SerialLogger.log(LOG_SEND_DONE_1_ERROR, error);
@@ -367,9 +366,9 @@ implementation {
     if (msg_hdr->source == TOS_NODE_ID) {
       signal AMSend.sendDone(msg, error);
     } else {
-      call MessagePool.put(msg);
+      call Pool.put(msg);
     }
-    if (!call Radio1Queue.empty()) {
+    if (!call Queue.empty()) {
       sendRadio1();
     }
   }
@@ -378,7 +377,7 @@ implementation {
     message_t* queue_head;
     mpdr_msg_hdr_t* msg_hdr;
     radio2Busy = FALSE;
-    queue_head = call Radio2Queue.head();
+    queue_head = call Queue.head();
     if (queue_head != msg) {
       call SerialLogger.log(LOG_QUEUE_HEAD_ERROR_2, 0);
       return;
@@ -405,7 +404,7 @@ implementation {
       numRetransmissions2 = 0;
       retransmitting2 = FALSE;
     }
-    call Radio2Queue.dequeue();
+    call Queue.dequeue();
     msg_hdr = call Radio2Send.getPayload(msg, sizeof(mpdr_msg_hdr_t));
     if (error != SUCCESS) {
       call SerialLogger.log(LOG_SEND_DONE_2_ERROR, error);
@@ -413,9 +412,9 @@ implementation {
     if (msg_hdr->source == TOS_NODE_ID) {
       signal AMSend.sendDone(msg, error);
     } else {
-      call MessagePool.put(msg);
+      call Pool.put(msg);
     }
-    if (!call Radio2Queue.empty()) {
+    if (!call Queue.empty()) {
       sendRadio2();
     }
   }

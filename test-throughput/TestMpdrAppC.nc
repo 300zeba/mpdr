@@ -15,7 +15,8 @@ implementation {
   components new TimerMilliC() as FinishTimerC;
   App.FinishTimer -> FinishTimerC;
 
-  components new PoolC(message_t, 10);
+  components new PoolC(message_t, 100);
+  components new QueueC(message_t*, 100);
   App.MessagePool -> PoolC;
 
   components SerialLoggerC;
@@ -30,6 +31,8 @@ implementation {
   App.RadiosControl -> DualRadioControlC;
 
   components MpdrC;
+  MpdrC.Pool -> PoolC;
+  MpdrC.Queue -> QueueC;
   App.MpdrControl -> MpdrC;
   App.MpdrRouting -> MpdrC;
   App.MpdrSend -> MpdrC;
