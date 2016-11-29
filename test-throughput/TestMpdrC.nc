@@ -5,8 +5,6 @@
 #define FINISH_TIME 20000
 #define TEST_DURATION 30000
 
-#define TEST_NON_STOP 1
-#define TEST_PERIODIC 0
 #define NUM_MSGS 10
 #define SEND_PERIOD 5
 
@@ -41,6 +39,8 @@ implementation {
 
   bool transmitting = FALSE;
 
+  message_t msgBuffer;
+
   uint16_t sendCount = 0;
   uint16_t receivedCount = 0;
   uint8_t testCounter = 0;
@@ -71,14 +71,26 @@ implementation {
 
   void initializeNode() {
     uint8_t i;
+    uint8_t node;
+    uint8_t next_hop;
     uint8_t radio;
     uint8_t channel;
     call SerialLogger.log(LOG_INITIALIZED, TOS_NODE_ID);
     for (i = 0; i < numHops; i++) {
-      if (TOS_NODE_ID == hops[i][0] || TOS_NODE_ID == hops[i][1]) {
-        radio = hops[i][2];
-        channel = hops[i][3];
+      node = hops[i][0];
+      next_hop = hops[i][1];
+      radio = hops[i][2];
+      channel = hops[i][3];
+      if (TOS_NODE_ID == node || TOS_NODE_ID == next_hop) {
         call MpdrRouting.setRadioChannel(radio, channel);
+      }
+      if (TOS_NODE_ID == node && TOS_NODE_ID == sourceNode) {
+        call MpdrRouting.addSendRoute(sourceNode, destinationNode,
+                                      next_hop, radio, channel);
+      }
+      if (TOS_NODE_ID == node && TOS_NODE_ID != sourceNode) {
+        call MpdrRouting.addRoutingItem(sourceNode, destinationNode,
+                                        next_hop, radio, channel);
       }
     }
     if (TOS_NODE_ID == sourceNode) {
@@ -97,24 +109,24 @@ implementation {
   void sendMessage() {
     message_t* msg;
     mpdr_test_msg_t* payload;
+    error_t result;
     uint8_t i;
-    if (NUM_MSGS != 0 && sendCount >= NUM_MSGS) {
+    if (NUM_MSGS > 0 && sendCount >= NUM_MSGS) {
       transmitting = FALSE;
       return;
     }
-    msg = call MessagePool.get();
-    if (msg == NULL) {
-      return;
-    }
+    msg = &msgBuffer;
     payload = (mpdr_test_msg_t*) call MpdrPacket.getPayload(msg,
                                                        sizeof(mpdr_test_msg_t));
     payload->seqno = sendCount;
     for (i = 0; i < MSG_SIZE; i++) {
       payload->data[i] = i;
     }
-    call MpdrPacket.setPayloadLength(msg, sizeof(mpdr_test_msg_t));
-    call MpdrSend.send(destinationNode, msg, sizeof(mpdr_test_msg_t));
-    sendCount++;
+    // call MpdrPacket.setPayloadLength(msg, sizeof(mpdr_test_msg_t));
+    result = call MpdrSend.send(destinationNode, msg, sizeof(mpdr_test_msg_t));
+    if (result == SUCCESS) {
+      sendCount++;
+    }
   }
 
   event void Boot.booted() {
@@ -143,15 +155,7 @@ implementation {
 
   event void RadiosControl.stopDone(error_t error) {}
 
-  event void MpdrSend.sendDone(message_t* msg, error_t error) {
-    call MessagePool.put(msg);
-    if (error != SUCCESS) {
-      call SerialLogger.log(LOG_ERROR_MPDR_SEND_DONE, error);
-    }
-    if (TEST_NON_STOP) {
-      sendMessage();
-    }
-  }
+  event void MpdrSend.sendDone(message_t* msg, error_t error) {}
 
   event message_t* MpdrReceive.receive(message_t* msg, void* payload,
                                        uint8_t len) {
@@ -173,28 +177,20 @@ implementation {
 
   event void TestTimer.fired() {
     transmitting = TRUE;
-    sendMessage();
-    if (numPaths == 2) {
-      sendMessage();
-    }
-    if (TEST_PERIODIC) {
-      call SendTimer.startPeriodic(SEND_PERIOD);
-    }
+    call SendTimer.startPeriodic(SEND_PERIOD);
   }
 
   event void SendTimer.fired() {
     if (transmitting) {
       sendMessage();
-      if (numPaths == 2) {
-        sendMessage();
-      }
+    } else {
+      call SendTimer.stop();
     }
   }
 
   event void FinishTimer.fired() {
     uint16_t data;
     call SerialLogger.log(LOG_TEST_NUMBER, testCounter);
-    testCounter++;
     data = call MpdrStats.getReceivedRadio1();
     call SerialLogger.log(LOG_RECEIVED_RADIO_1, data);
     data = call MpdrStats.getReceivedRadio2();
@@ -227,6 +223,8 @@ implementation {
     // call SerialLogger.log(LOG_MAX_PAYLOAD_LENGTH, data);
     call MpdrStats.clear();
     sendCount = 0;
+    receivedCount = 0;
+    testCounter++;
     if (NUM_TESTS > 0 && testCounter >= NUM_TESTS) {
       call TestTimer.stop();
       call FinishTimer.stop();
