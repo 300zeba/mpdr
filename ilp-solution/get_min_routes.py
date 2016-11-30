@@ -1,6 +1,4 @@
 import re
-import networkx as nx
-import matplotlib.pyplot as plt
 import argparse
 import pprint as pp
 import glob

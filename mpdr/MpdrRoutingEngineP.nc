@@ -168,30 +168,30 @@ implementation {
       return FAIL;
     }
     if (radio == 1) {
-      call SerialLogger.log(LOG_SET_RADIO_CHANNEL_1, chosen);
+      /*call SerialLogger.log(LOG_SET_RADIO_CHANNEL_1, chosen);*/
       result = FAIL;
       while (result != SUCCESS && attempts < 300) {
         result = call RadioChannel1.setChannel(chosen);
         if (result == EALREADY) {
-          call SerialLogger.log(LOG_SET_RADIO_CHANNEL_1_OK, chosen);
+          /*call SerialLogger.log(LOG_SET_RADIO_CHANNEL_1_OK, chosen);*/
           result = SUCCESS;
         }
         if (result != SUCCESS && attempts < 3) {
-          call SerialLogger.log(LOG_SET_RADIO_CHANNEL_1_ERROR, result);
+          /*call SerialLogger.log(LOG_SET_RADIO_CHANNEL_1_ERROR, result);*/
         }
         attempts++;
       }
     } else {
-      call SerialLogger.log(LOG_SET_RADIO_CHANNEL_2, chosen);
+      /*call SerialLogger.log(LOG_SET_RADIO_CHANNEL_2, chosen);*/
       result = FAIL;
       while (result != SUCCESS && attempts < 100) {
         result = call RadioChannel2.setChannel(chosen);
         if (result == EALREADY) {
-          call SerialLogger.log(LOG_SET_RADIO_CHANNEL_2_OK, chosen);
+          /*call SerialLogger.log(LOG_SET_RADIO_CHANNEL_2_OK, chosen);*/
           result = SUCCESS;
         }
         if (result != SUCCESS && attempts < 300) {
-          call SerialLogger.log(LOG_SET_RADIO_CHANNEL_2_ERROR, result);
+          /*call SerialLogger.log(LOG_SET_RADIO_CHANNEL_2_ERROR, result);*/
         }
       }
     }
@@ -260,11 +260,11 @@ implementation {
 
     if (rmsg->last_radio == 1) {
       channel = (rmsg->last_channel == 1) ? 26 : 15;
-      call SerialLogger.log(LOG_SET_RADIO_CHANNEL_1, channel);
+      /*call SerialLogger.log(LOG_SET_RADIO_CHANNEL_1, channel);*/
       call RadioChannel1.setChannel(channel);
     } else {
       channel = (rmsg->last_channel == 1) ? 6 : 10;
-      call SerialLogger.log(LOG_SET_RADIO_CHANNEL_2, channel);
+      /*call SerialLogger.log(LOG_SET_RADIO_CHANNEL_2, channel);*/
       call RadioChannel2.setChannel(channel);
     }
     if (rmsg->source == TOS_NODE_ID) {
@@ -349,7 +349,7 @@ implementation {
       call RoutingSend1.send(rmsg->next_hop, msg, sizeof(mpdr_routing_msg_t));
     } else {
       channel = (rmsg->last_channel == 1) ? 26 : 15;
-      call SerialLogger.log(LOG_SET_RADIO_CHANNEL_1, channel);
+      /*call SerialLogger.log(LOG_SET_RADIO_CHANNEL_1, channel);*/
       call RadioChannel1.setChannel(channel);
     }
   }
@@ -362,19 +362,19 @@ implementation {
       call RoutingSend2.send(rmsg->next_hop, msg, sizeof(mpdr_routing_msg_t));
     } else {
       channel = (rmsg->last_channel == 1) ? 6 : 10;
-      call SerialLogger.log(LOG_SET_RADIO_CHANNEL_2, channel);
+      /*call SerialLogger.log(LOG_SET_RADIO_CHANNEL_2, channel);*/
       call RadioChannel2.setChannel(channel);
     }
   }
 
   event void RadioChannel1.setChannelDone() {
-    uint8_t channel = call RadioChannel1.getChannel();
-    call SerialLogger.log(LOG_SET_RADIO_CHANNEL_1_OK, channel);
+    /*uint8_t channel = call RadioChannel1.getChannel();
+    call SerialLogger.log(LOG_SET_RADIO_CHANNEL_1_OK, channel);*/
   }
 
   event void RadioChannel2.setChannelDone() {
-    uint8_t channel = call RadioChannel2.getChannel();
-    call SerialLogger.log(LOG_SET_RADIO_CHANNEL_2_OK, channel);
+    /*uint8_t channel = call RadioChannel2.getChannel();
+    call SerialLogger.log(LOG_SET_RADIO_CHANNEL_2_OK, channel);*/
   }
 
 }

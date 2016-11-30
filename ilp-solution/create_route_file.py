@@ -99,24 +99,22 @@ def get_routes(inputFile, outputFile):
     destination = get_destination(links)
     source_routes, relay_routes = add_channel(links, source, destination)
     paths_len = len(source_routes) + len(relay_routes)
-    outputText =  "  // Paths' cost: " + value + "\n"
-    outputText += "  // Paths' len: " + str(paths_len) + "\n"
-    outputText += "  uint8_t destinationNode = " + str(destination) + ";\n"
+    num_paths = len(source_routes)
+    outputText =  "  // cost: " + value + "\n"
+    outputText += "  // len: " + str(paths_len) + "\n"
+    outputText += "  uint8_t numPaths = " + str(num_paths) + ";\n"
     outputText += "  uint8_t sourceNode = " + str(source) + ";\n"
-    outputText += "  uint8_t sourceRoutes[2][3] = {\n"
+    outputText += "  uint8_t destinationNode = " + str(destination) + ";\n"
+    outputText += "  uint8_t numHops = " + str(paths_len) + ";\n"
+    outputText += "  uint8_t hops[" + str(paths_len) + "][4] = {\n"
     for link in source_routes:
-        outputText += "    {" + str(link["destination"]) + ", "
+        outputText += "    {" + str(link["source"]) + ", "
+        outputText +=           str(link["destination"]) + ", "
         outputText +=           str(link["radio"]) + ", "
         outputText +=           str(link["channel"]) + "},\n"
-    outputText += "  };\n"
-    outputText += "  uint8_t relayLength = " + str(len(relay_routes)) + ";\n"
-    outputText += "  uint8_t relayNodes[" + str(len(relay_routes)) + "] = {"
     for link in relay_routes:
-        outputText += str(link["source"]) + ", "
-    outputText += "};\n"
-    outputText += "  uint8_t relayRoutes[" + str(len(relay_routes)) + "][3] = {\n"
-    for link in relay_routes:
-        outputText += "    {" + str(link["destination"]) + ", "
+        outputText += "    {" + str(link["source"]) + ", "
+        outputText +=           str(link["destination"]) + ", "
         outputText +=           str(link["radio"]) + ", "
         outputText +=           str(link["channel"]) + "},\n"
     outputText += "  };\n"

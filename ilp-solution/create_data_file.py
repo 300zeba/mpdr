@@ -1,6 +1,4 @@
 import re
-# import networkx as nx
-# import matplotlib.pyplot as plt
 import argparse
 
 def read_log_file(file, format):
@@ -102,23 +100,6 @@ def grid_layout(G, width, height):
         layout[node] = [(node-1) % width, 10-(node-1) // height]
     return layout
 
-
-# def create_nx_digraph(nodes, links, filename):
-#     G = nx.DiGraph()
-#     G.add_nodes_from(nodes)
-#     G.add_edges_from(links.keys())
-#     for key, value in links.iteritems():
-#         G[key[0]][key[1]]['weight'] = (100-value) if (100-value) >= 1 else 1
-#     isolates = nx.isolates(G)
-#     G.remove_nodes_from(isolates)
-#     # pos = grid_layout(G, 10, 10)
-#     pos = nx.spring_layout(G)
-#     nx.draw_networkx_nodes(G, pos)
-#     nx.draw_networkx_edges(G, pos, arrows=False)
-#     nx.draw_networkx_labels(G, pos)
-    # plt.savefig(filename)
-    # plt.show()
-
 def get_link_difference(links1, links2):
     link_diff = {}
     for key, value in links1.iteritems():
@@ -154,7 +135,6 @@ def main():
     merged = merge_links(links1, links2)
     create_data_file(nodes, merged, outputFile, source, destination)
     both_links = get_link_intersection(links1, links2)
-    # create_nx_digraph(nodes, both_links, "both_links.png")
 
 if __name__ == "__main__":
     main()

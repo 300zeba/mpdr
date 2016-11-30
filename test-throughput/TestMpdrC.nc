@@ -5,8 +5,8 @@
 #define FINISH_TIME 20000
 #define TEST_DURATION 30000
 
-#define NUM_MSGS 10
-#define SEND_PERIOD 5
+#define NUM_MSGS 1000
+#define SEND_PERIOD 2
 
 #define INIT_TIME 10000
 
@@ -45,6 +45,8 @@ implementation {
   uint16_t receivedCount = 0;
   uint8_t testCounter = 0;
 
+  /*// cost: 11
+  // len: 4
   uint8_t numPaths = 2;
   uint8_t sourceNode = 77;
   uint8_t destinationNode = 2;
@@ -54,6 +56,21 @@ implementation {
     {77, 81, 2, 2},
     {78, 2, 2, 1},
     {81, 2, 1, 2},
+  };*/
+
+  // cost: 34
+  // len: 6
+  uint8_t numPaths = 2;
+  uint8_t sourceNode = 32;
+  uint8_t destinationNode = 2;
+  uint8_t numHops = 6;
+  uint8_t hops[6][4] = {
+    {32, 55, 1, 1},
+    {32, 28, 2, 2},
+    {55, 57, 2, 1},
+    {57, 2, 1, 2},
+    {28, 5, 1, 2},
+    {5, 2, 2, 1},
   };
 
   bool isRelay() {
@@ -75,7 +92,7 @@ implementation {
     uint8_t next_hop;
     uint8_t radio;
     uint8_t channel;
-    call SerialLogger.log(LOG_INITIALIZED, TOS_NODE_ID);
+    /*call SerialLogger.log(LOG_INITIALIZED, TOS_NODE_ID);*/
     for (i = 0; i < numHops; i++) {
       node = hops[i][0];
       next_hop = hops[i][1];
@@ -122,7 +139,6 @@ implementation {
     for (i = 0; i < MSG_SIZE; i++) {
       payload->data[i] = i;
     }
-    // call MpdrPacket.setPayloadLength(msg, sizeof(mpdr_test_msg_t));
     result = call MpdrSend.send(destinationNode, msg, sizeof(mpdr_test_msg_t));
     if (result == SUCCESS) {
       sendCount++;
@@ -211,16 +227,16 @@ implementation {
     call SerialLogger.log(LOG_DROPPED_1, data);
     data = call MpdrStats.getDropped2();
     call SerialLogger.log(LOG_DROPPED_2, data);
-    data = call MpdrStats.getMaxQueueSize1();
-    call SerialLogger.log(LOG_MAX_QUEUE_1, data);
-    data = call MpdrStats.getMaxQueueSize2();
-    call SerialLogger.log(LOG_MAX_QUEUE_2, data);
+    data = call MpdrStats.getMaxQueueSize();
+    call SerialLogger.log(LOG_MAX_QUEUE, data);
     data = call MpdrStats.getDuplicated1();
     call SerialLogger.log(LOG_DUPLICATED_1, data);
     data = call MpdrStats.getDuplicated2();
     call SerialLogger.log(LOG_DUPLICATED_2, data);
-    // data = call MpdrPacket.maxPayloadLength();
-    // call SerialLogger.log(LOG_MAX_PAYLOAD_LENGTH, data);
+    data = call MpdrStats.getEbusyRadio1();
+    call SerialLogger.log(LOG_EBUSY_RADIO_1, data);
+    data = call MpdrStats.getEbusyRadio2();
+    call SerialLogger.log(LOG_EBUSY_RADIO_2, data);
     call MpdrStats.clear();
     sendCount = 0;
     receivedCount = 0;
