@@ -23,6 +23,7 @@ generic module MpdrForwardingEngineP() {
     interface Queue<message_t*>;
     interface SerialLogger;
     interface LocalTime<TMilli>;
+    interface Timer<TMilli> as RetryTimer;
   }
 }
 
@@ -30,7 +31,7 @@ implementation {
 
   uint8_t radio = 1;
   uint8_t prefRadio = 0;
-  bool requireAck = TRUE;
+  bool requireAck = FALSE;
   uint8_t maxRetransmissions = 3;
   uint16_t nextDsn = 1;
 
@@ -89,6 +90,8 @@ implementation {
     len = call Radio1Packet.payloadLength(msg1);
     if (requireAck) {
       result = call Radio1Ack.requestAck(msg1);
+    } else {
+      result = call Radio1Ack.noAck(msg1);
     }
     /*seqno = (uint16_t*) (((void*)msg_hdr) + sizeof(mpdr_msg_hdr_t) + 1);
     if (!retransmitting1) {
@@ -134,6 +137,8 @@ implementation {
     len = call Radio2Packet.payloadLength(msg2);
     if (requireAck) {
       result = call Radio2Ack.requestAck(msg2);
+    } else {
+      result = call Radio2Ack.noAck(msg2);
     }
     /*seqno = (uint16_t*) (((void*)msg_hdr) + sizeof(mpdr_msg_hdr_t) + 1);
     if (!retransmitting2) {
@@ -244,6 +249,9 @@ implementation {
       call Pool.put(send_msg);
       return FAIL;
     }
+    if (call Routing.getNumPaths() == 1) {
+      prefRadio = 1;
+    }
     sendMessage();
     return SUCCESS;
   }
@@ -296,6 +304,7 @@ implementation {
         return msg;
       }
       memcpy(send_msg, msg, sizeof(message_t));
+      call Packet.setPayloadLength(send_msg, len - sizeof(mpdr_msg_hdr_t));
       result = call Queue.enqueue(send_msg);
       if (result == SUCCESS) {
         prefRadio = 2;
@@ -348,6 +357,7 @@ implementation {
         return msg;
       }
       memcpy(send_msg, msg, sizeof(message_t));
+      call Packet.setPayloadLength(send_msg, len - sizeof(mpdr_msg_hdr_t));
       result = call Queue.enqueue(send_msg);
       if (result == SUCCESS) {
         prefRadio = 1;
@@ -366,6 +376,15 @@ implementation {
     return msg;
   }
 
+  event void RetryTimer.fired() {
+    if (retransmitting1) {
+      sendRadio1();
+    }
+    if (retransmitting2) {
+      sendRadio2();
+    }
+  }
+
   event void Radio1Send.sendDone(message_t* msg, error_t error) {
     bool dropped = FALSE;
     radio1Busy = FALSE;
@@ -375,6 +394,9 @@ implementation {
     }
     if (error == EBUSY) {
       statEbusyRadio1++;
+      retransmitting1 = TRUE;
+      call RetryTimer.startOneShot(2);
+      return;
     }
     if (requireAck) {
       if (!call Radio1Ack.wasAcked(msg)) {
@@ -395,9 +417,9 @@ implementation {
           }
         }
       }
-      numRetransmissions1 = 0;
-      retransmitting1 = FALSE;
     }
+    numRetransmissions1 = 0;
+    retransmitting1 = FALSE;
     if (dropped) {
       statDropped1++;
     } else {
@@ -422,6 +444,9 @@ implementation {
     }
     if (error == EBUSY) {
       statEbusyRadio2++;
+      retransmitting2 = TRUE;
+      call RetryTimer.startOneShot(2);
+      return;
     }
     if (requireAck) {
       if (!call Radio2Ack.wasAcked(msg)) {
@@ -442,9 +467,9 @@ implementation {
           }
         }
       }
-      numRetransmissions2 = 0;
-      retransmitting2 = FALSE;
     }
+    numRetransmissions2 = 0;
+    retransmitting2 = FALSE;
     if (dropped) {
       statDropped2++;
     } else {

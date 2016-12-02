@@ -45,33 +45,64 @@ implementation {
   uint16_t receivedCount = 0;
   uint8_t testCounter = 0;
 
-  /*// cost: 11
-  // len: 4
+  /*// cost: 61
+  // len: 8
   uint8_t numPaths = 2;
-  uint8_t sourceNode = 77;
-  uint8_t destinationNode = 2;
-  uint8_t numHops = 4;
-  uint8_t hops[4][4] = {
-    {77, 78, 1, 1},
-    {77, 81, 2, 2},
-    {78, 2, 2, 1},
-    {81, 2, 1, 2},
+  uint8_t sourceNode = 62;
+  uint8_t destinationNode = 1;
+  uint8_t numHops = 8;
+  uint8_t hops[8][4] = {
+    {62, 8, 1, 1},
+    {62, 59, 2, 2},
+    {8, 53, 2, 1},
+    {53, 78, 1, 2},
+    {78, 1, 2, 2},
+    {59, 60, 1, 2},
+    {60, 58, 2, 1},
+    {58, 1, 1, 1},
   };*/
 
-  // cost: 34
-  // len: 6
+  /*// cost: 28
+  // len: 3
+  uint8_t numPaths = 1;
+  uint8_t sourceNode = 62;
+  uint8_t destinationNode = 1;
+  uint8_t numHops = 3;
+  uint8_t hops[3][4] = {
+    {62, 60, 1, 1},
+    {60, 58, 2, 1},
+    {58, 1, 1, 2},
+  };*/
+
+  /*// cost: 68
+  // len: 8
   uint8_t numPaths = 2;
-  uint8_t sourceNode = 32;
+  uint8_t sourceNode = 61;
   uint8_t destinationNode = 2;
-  uint8_t numHops = 6;
-  uint8_t hops[6][4] = {
-    {32, 55, 1, 1},
-    {32, 28, 2, 2},
+  uint8_t numHops = 8;
+  uint8_t hops[8][4] = {
+    {61, 65, 1, 1},
+    {61, 7, 2, 2},
+    {65, 62, 2, 1},
+    {62, 60, 1, 2},
+    {60, 2, 2, 2},
+    {7, 55, 1, 2},
     {55, 57, 2, 1},
-    {57, 2, 1, 2},
-    {28, 5, 1, 2},
-    {5, 2, 2, 1},
+    {57, 2, 1, 1},
+  };*/
+
+  // cost: 33
+  // len: 3
+  uint8_t numPaths = 1;
+  uint8_t sourceNode = 61;
+  uint8_t destinationNode = 2;
+  uint8_t numHops = 3;
+  uint8_t hops[3][4] = {
+    {61, 62, 2, 2},
+    {62, 60, 1, 2},
+    {60, 2, 2, 1},
   };
+
 
   bool isRelay() {
     uint8_t i;
@@ -102,8 +133,13 @@ implementation {
         call MpdrRouting.setRadioChannel(radio, channel);
       }
       if (TOS_NODE_ID == node && TOS_NODE_ID == sourceNode) {
-        call MpdrRouting.addSendRoute(sourceNode, destinationNode,
-                                      next_hop, radio, channel);
+        if (numPaths == 2) {
+          call MpdrRouting.addSendRoute(sourceNode, destinationNode,
+                                        next_hop, radio, channel);
+        } else {
+          call MpdrRouting.addRoutingItem(sourceNode, destinationNode,
+                                          next_hop, radio, channel);
+        }
       }
       if (TOS_NODE_ID == node && TOS_NODE_ID != sourceNode) {
         call MpdrRouting.addRoutingItem(sourceNode, destinationNode,
