@@ -17,7 +17,6 @@ implementation {
 
   components new PoolC(message_t, 100);
   components new QueueC(message_t*, 100);
-  App.MessagePool -> PoolC;
 
   components SerialLoggerC;
   App.SerialControl -> SerialLoggerC;

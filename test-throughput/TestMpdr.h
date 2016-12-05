@@ -80,6 +80,9 @@ enum {
   LOG_NEXT_HOP_2,
   LOG_EBUSY_RADIO_1,
   LOG_EBUSY_RADIO_2,
+  LOG_SENT_TOTAL,
+  LOG_RECEIVED_TOTAL,
+  LOG_TIME_TOTAL,
 };
 
 typedef nx_struct mpdr_test_msg {

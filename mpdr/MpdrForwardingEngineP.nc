@@ -1,5 +1,7 @@
 #include "Mpdr.h"
 
+#define RETRY_TIME 2
+
 generic module MpdrForwardingEngineP() {
   provides {
     interface StdControl;
@@ -31,8 +33,8 @@ implementation {
 
   uint8_t radio = 1;
   uint8_t prefRadio = 0;
-  bool requireAck = FALSE;
-  uint8_t maxRetransmissions = 3;
+  bool requireAck = TRUE;
+  uint8_t maxRetransmissions = 5;
   uint16_t nextDsn = 1;
 
   message_t* msg1;
@@ -395,7 +397,7 @@ implementation {
     if (error == EBUSY) {
       statEbusyRadio1++;
       retransmitting1 = TRUE;
-      call RetryTimer.startOneShot(2);
+      call RetryTimer.startOneShot(RETRY_TIME);
       return;
     }
     if (requireAck) {
@@ -404,13 +406,13 @@ implementation {
           retransmitting1 = TRUE;
           statRetransmissions1++;
           numRetransmissions1++;
-          sendRadio1();
+          call RetryTimer.startOneShot(RETRY_TIME);
           return;
         } else {
           if (numRetransmissions1 < maxRetransmissions) {
             statRetransmissions1++;
             numRetransmissions1++;
-            sendRadio1();
+            call RetryTimer.startOneShot(RETRY_TIME);
             return;
           } else {
             dropped = TRUE;
@@ -445,7 +447,7 @@ implementation {
     if (error == EBUSY) {
       statEbusyRadio2++;
       retransmitting2 = TRUE;
-      call RetryTimer.startOneShot(2);
+      call RetryTimer.startOneShot(RETRY_TIME);
       return;
     }
     if (requireAck) {
@@ -454,13 +456,13 @@ implementation {
           retransmitting2 = TRUE;
           statRetransmissions2++;
           numRetransmissions2++;
-          sendRadio2();
+          call RetryTimer.startOneShot(RETRY_TIME);
           return;
         } else {
           if (numRetransmissions2 < maxRetransmissions) {
             statRetransmissions2++;
             numRetransmissions2++;
-            sendRadio2();
+            call RetryTimer.startOneShot(RETRY_TIME);
             return;
           } else {
             dropped = TRUE;

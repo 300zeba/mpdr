@@ -31,10 +31,10 @@ def main():
                         type=argparse.FileType("w"), default=sys.stdout)
     args = parser.parse_args()
     outputFile = args.output_file
-    min_dual = get_min_routes("routes/dual_*_2.txt")
+    min_dual = get_min_routes("routes/dual_*_1.txt")
     pp.pprint(min_dual)
-    min_single = get_min_routes("routes/single_*_2.txt")
-    pp.pprint(min_single)
+    # min_single = get_min_routes("routes/single_*.txt")
+    # pp.pprint(min_single)
 
 
 
