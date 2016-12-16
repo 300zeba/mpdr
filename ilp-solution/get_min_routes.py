@@ -6,7 +6,7 @@ import sys
 
 def get_min_routes(pattern):
     files = glob.glob(pattern)
-    min_routes = {}
+    all_routes = {}
     for fileName in files:
         inputFile = open(fileName, "r")
         text = inputFile.read()
@@ -18,11 +18,14 @@ def get_min_routes(pattern):
         if match:
             value = match.group(1)
             length = int(value)
-        if length not in min_routes:
-            min_routes[length] = (fileName, cost)
+        if length not in all_routes:
+            all_routes[length] = [(fileName, cost)]
         else:
-            if min_routes[length][1] > cost:
-                min_routes[length] = (fileName, cost)
+            all_routes[length].append((fileName, cost))
+    min_routes = {}
+    for size, routes in all_routes.iteritems():
+        routes.sort(key=lambda x:x[1])
+        min_routes[size] = routes[0:5]
     return min_routes
 
 def main():
@@ -31,7 +34,7 @@ def main():
                         type=argparse.FileType("w"), default=sys.stdout)
     args = parser.parse_args()
     outputFile = args.output_file
-    min_dual = get_min_routes("routes/dual_*_1.txt")
+    min_dual = get_min_routes("routes/dual_*.txt")
     pp.pprint(min_dual)
     # min_single = get_min_routes("routes/single_*.txt")
     # pp.pprint(min_single)
