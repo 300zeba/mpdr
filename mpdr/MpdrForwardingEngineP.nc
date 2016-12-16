@@ -34,6 +34,7 @@ implementation {
   uint8_t radio = 1;
   uint8_t prefRadio = 0;
   bool requireAck = TRUE;
+  bool sourceSending = FALSE;
   uint8_t maxRetransmissions = 5;
   uint16_t nextDsn = 1;
 
@@ -194,7 +195,7 @@ implementation {
       msg_hdr = call Radio2Send.getPayload(msg, sizeof(mpdr_msg_hdr_t));
     }
     addr = msg_hdr->destination;
-    if (prefRadio == 0) {
+    if (prefRadio == 0 || sourceSending) {
       result = call Routing.getSendAddresses(addr, &next1, &next2);
     } else {
       next1 = call Routing.getNextHop(msg_hdr->destination);
@@ -252,6 +253,7 @@ implementation {
       return FAIL;
     }
     if (call Routing.getNumPaths() == 1) {
+      sourceSending = TRUE;
       prefRadio = 1;
     }
     sendMessage();
