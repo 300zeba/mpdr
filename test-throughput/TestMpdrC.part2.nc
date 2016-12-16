@@ -29,13 +29,8 @@
         call MpdrRouting.setRadioChannel(radio, channel);
       }
       if (TOS_NODE_ID == node && TOS_NODE_ID == sourceNode) {
-        if (numPaths == 2) {
-          call MpdrRouting.addSendRoute(sourceNode, destinationNode,
-                                        next_hop, radio, channel);
-        } else {
-          call MpdrRouting.addRoutingItem(sourceNode, destinationNode,
-                                          next_hop, radio, channel);
-        }
+        call MpdrRouting.addSendRoute(sourceNode, destinationNode,
+                                      next_hop, radio, channel);
       }
       if (TOS_NODE_ID == node && TOS_NODE_ID != sourceNode) {
         call MpdrRouting.addRoutingItem(sourceNode, destinationNode,
@@ -100,6 +95,7 @@
       call RadiosControl.start();
     } else {
       call MpdrControl.start();
+      numPaths = NUM_PATHS;
       call MpdrRouting.setNumPaths(numPaths);
       call InitTimer.startOneShot(INIT_TIME);
     }

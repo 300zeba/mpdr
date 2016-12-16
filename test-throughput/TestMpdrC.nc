@@ -1,5 +1,6 @@
 #include "TestMpdr.h"
 
+#define NUM_PATHS 2
 #define NUM_TESTS 10
 #define TEST_DELAY 10000
 #define FINISH_TIME 20000
@@ -47,29 +48,29 @@ implementation {
   uint32_t endTime = 0;
 
   // Init route
-  // cost: 97
+  // cost: 91
   // len: 16
   uint8_t numPaths = 2;
-  uint8_t sourceNode = 96;
-  uint8_t destinationNode = 26;
+  uint8_t sourceNode = 77;
+  uint8_t destinationNode = 99;
   uint8_t numHops = 16;
   uint8_t hops[16][4] = {
-    {96, 99, 1, 1},
-    {96, 94, 2, 2},
-    {99, 17, 2, 1},
-    {17, 45, 1, 2},
-    {45, 41, 2, 2},
-    {41, 33, 1, 1},
-    {33, 29, 2, 1},
-    {29, 27, 1, 2},
-    {27, 26, 2, 2},
-    {94, 67, 1, 2},
-    {67, 64, 2, 1},
-    {64, 62, 1, 1},
-    {62, 8, 2, 2},
-    {8, 6, 1, 2},
-    {6, 1, 2, 1},
-    {1, 26, 1, 1},
+    {77, 78, 1, 1},
+    {77, 79, 2, 2},
+    {78, 53, 2, 1},
+    {53, 54, 1, 2},
+    {54, 61, 2, 2},
+    {61, 91, 1, 1},
+    {91, 95, 2, 1},
+    {95, 93, 1, 2},
+    {93, 99, 2, 2},
+    {79, 52, 1, 2},
+    {52, 6, 2, 1},
+    {6, 31, 1, 1},
+    {31, 64, 2, 2},
+    {64, 67, 1, 2},
+    {67, 100, 2, 1},
+    {100, 99, 1, 1},
   };
   // End route
 
@@ -102,13 +103,8 @@ implementation {
         call MpdrRouting.setRadioChannel(radio, channel);
       }
       if (TOS_NODE_ID == node && TOS_NODE_ID == sourceNode) {
-        if (numPaths == 2) {
-          call MpdrRouting.addSendRoute(sourceNode, destinationNode,
-                                        next_hop, radio, channel);
-        } else {
-          call MpdrRouting.addRoutingItem(sourceNode, destinationNode,
-                                          next_hop, radio, channel);
-        }
+        call MpdrRouting.addSendRoute(sourceNode, destinationNode,
+                                      next_hop, radio, channel);
       }
       if (TOS_NODE_ID == node && TOS_NODE_ID != sourceNode) {
         call MpdrRouting.addRoutingItem(sourceNode, destinationNode,
@@ -173,6 +169,7 @@ implementation {
       call RadiosControl.start();
     } else {
       call MpdrControl.start();
+      numPaths = NUM_PATHS;
       call MpdrRouting.setNumPaths(numPaths);
       call InitTimer.startOneShot(INIT_TIME);
     }
