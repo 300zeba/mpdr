@@ -155,7 +155,7 @@ implementation {
   }
 
   command error_t MpdrRouting.setRadioChannel(uint8_t radio, uint8_t channel) {
-    uint8_t channels[2][2] = {{26, 15}, {6, 10}};
+    uint8_t channels[2][4] = {{26, 15, 25, 20}, {6, 10, 4, 8}};
     uint8_t chosen = channels[radio-1][channel-1];
     error_t result;
     uint8_t attempts = 0;
@@ -163,7 +163,7 @@ implementation {
       call SerialLogger.log(LOG_RADIO_NUMBER_ERROR, radio);
       return FAIL;
     }
-    if (channel != 1 && channel != 2) {
+    if (channel == 0 || channel > 4) {
       call SerialLogger.log(LOG_CHANNEL_NUMBER_ERROR, channel);
       return FAIL;
     }

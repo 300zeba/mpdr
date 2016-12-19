@@ -33,9 +33,9 @@ implementation {
 
   uint8_t radio = 1;
   uint8_t prefRadio = 0;
-  bool requireAck = TRUE;
+  bool requireAck = FALSE;
   bool sourceSending = FALSE;
-  uint8_t maxRetransmissions = 5;
+  uint8_t maxRetransmissions = 10;
   uint16_t nextDsn = 1;
 
   message_t* msg1;

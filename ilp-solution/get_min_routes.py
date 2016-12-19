@@ -36,10 +36,6 @@ def main():
     outputFile = args.output_file
     min_dual = get_min_routes("routes/dual_*.txt")
     pp.pprint(min_dual)
-    # min_single = get_min_routes("routes/single_*.txt")
-    # pp.pprint(min_single)
-
-
 
 if __name__ == "__main__":
     main()

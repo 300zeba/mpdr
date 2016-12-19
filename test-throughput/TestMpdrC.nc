@@ -1,6 +1,6 @@
 #include "TestMpdr.h"
 
-#define NUM_PATHS 2
+#define NUM_PATHS 1
 #define NUM_TESTS 10
 #define TEST_DELAY 10000
 #define FINISH_TIME 20000
@@ -48,29 +48,29 @@ implementation {
   uint32_t endTime = 0;
 
   // Init route
-  // cost: 91
+  // cost: 108
   // len: 16
   uint8_t numPaths = 2;
-  uint8_t sourceNode = 77;
-  uint8_t destinationNode = 99;
+  uint8_t sourceNode = 26;
+  uint8_t destinationNode = 25;
   uint8_t numHops = 16;
   uint8_t hops[16][4] = {
-    {77, 78, 1, 1},
-    {77, 79, 2, 2},
-    {78, 53, 2, 1},
-    {53, 54, 1, 2},
-    {54, 61, 2, 2},
-    {61, 91, 1, 1},
-    {91, 95, 2, 1},
-    {95, 93, 1, 2},
-    {93, 99, 2, 2},
-    {79, 52, 1, 2},
-    {52, 6, 2, 1},
-    {6, 31, 1, 1},
-    {31, 64, 2, 2},
-    {64, 67, 1, 2},
-    {67, 100, 2, 1},
-    {100, 99, 1, 1},
+    {26, 30, 1, 1},
+    {26, 28, 2, 2},
+    {30, 27, 2, 1},
+    {27, 5, 1, 2},
+    {5, 55, 2, 2},
+    {55, 62, 1, 1},
+    {62, 63, 2, 1},
+    {63, 67, 1, 2},
+    {67, 100, 2, 2},
+    {100, 97, 1, 1},
+    {97, 25, 2, 1},
+    {28, 31, 1, 2},
+    {31, 41, 2, 1},
+    {41, 16, 1, 1},
+    {16, 18, 2, 2},
+    {18, 25, 1, 2},
   };
   // End route
 
