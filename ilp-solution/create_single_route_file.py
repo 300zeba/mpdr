@@ -53,7 +53,7 @@ def get_link(links, source=None, destination=None, radio=None):
     return None
 
 def add_channel(links, source, destination):
-    num_channels = 4
+    num_channels = 2
     source_routes = []
     relay_routes = []
     current_node = get_link(links, source=source, radio=1)
@@ -77,7 +77,7 @@ def add_channel(links, source, destination):
     if current_node:
         source_routes.append(current_node)
         next_hop = current_node["destination"]
-        channel = num_channels // 2 + 1
+        channel = num_channels
         count = 0
         while next_hop != destination:
             current_node["channel"] = channel

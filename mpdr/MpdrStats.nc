@@ -11,9 +11,12 @@ interface MpdrStats {
   command uint32_t getTimeRadio2();
   command uint16_t getRetransmissions1();
   command uint16_t getRetransmissions2();
-  command uint16_t getMaxQueueSize1();
-  command uint16_t getMaxQueueSize2();
+  command uint16_t getMaxQueueSize();
   command uint16_t getDuplicated1();
   command uint16_t getDuplicated2();
+  command uint16_t getPoolErrors();
+  command uint16_t getQueueErrors();
+  command uint16_t getEbusyRadio1();
+  command uint16_t getEbusyRadio2();
 
 }

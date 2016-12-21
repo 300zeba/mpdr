@@ -23,7 +23,7 @@ def main():
     if args.input_file is not None:
         lastFile = args.input_file
     else:
-        command = ["ls"]
+        command = ["ls", "testbed/*"]
         output = execute(command)
         files = output.split()
         lastFile = files[len(files)-1]

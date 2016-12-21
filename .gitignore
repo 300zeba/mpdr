@@ -3,3 +3,11 @@ build/
 *.txt
 *.png
 *.dat
+ilp-solution/data/
+ilp-solution/old/
+ilp-solution/outputs/
+ilp-solution/routes/
+ilp-solution/routes_ff/
+results/outputs/
+results/tables/
+results/testbed/

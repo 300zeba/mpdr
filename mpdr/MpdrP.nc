@@ -43,8 +43,10 @@ implementation {
   Forwarder.Queue = Queue;
 
   components LocalTimeMilliC;
+  components new TimerMilliC() as RetryTimerC;
 
   Forwarder.LocalTime -> LocalTimeMilliC;
+  Forwarder.RetryTimer -> RetryTimerC;
 
   Router.RoutingSend1 -> RF231ActiveMessageC.AMSend[23];
   Router.RoutingSend2 -> RF212ActiveMessageC.AMSend[23];
