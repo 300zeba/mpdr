@@ -1,6 +1,5 @@
 #include "TestMpdr.h"
 
-#define NUM_PATHS 1
 #define NUM_TESTS 10
 #define TEST_DELAY 10000
 #define FINISH_TIME 20000

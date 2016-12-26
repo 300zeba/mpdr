@@ -106,7 +106,7 @@ def get_routes(inputFile, outputFile):
     num_paths = len(source_routes)
     outputText =  "  // cost: " + value + "\n"
     outputText += "  // len: " + str(paths_len) + "\n"
-    outputText += "  uint8_t numPaths = " + str(num_paths) + ";\n"
+    outputText += "  uint8_t numPaths = 1;\n"
     outputText += "  uint8_t sourceNode = " + str(source) + ";\n"
     outputText += "  uint8_t destinationNode = " + str(destination) + ";\n"
     outputText += "  uint8_t numHops = " + str(paths_len) + ";\n"

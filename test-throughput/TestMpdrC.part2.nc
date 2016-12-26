@@ -56,7 +56,6 @@
     error_t result;
     uint8_t i;
     if (NUM_MSGS > 0 && sendCount >= NUM_MSGS) {
-      transmitting = FALSE;
       return;
     }
     if (startTime == 0) {
@@ -95,7 +94,6 @@
       call RadiosControl.start();
     } else {
       call MpdrControl.start();
-      numPaths = NUM_PATHS;
       call MpdrRouting.setNumPaths(numPaths);
       call InitTimer.startOneShot(INIT_TIME);
     }
@@ -107,19 +105,11 @@
 
   event message_t* MpdrReceive.receive(message_t* msg, void* payload,
                                        uint8_t len) {
-    uint8_t i;
-    mpdr_test_msg_t* rcvd_payload = (mpdr_test_msg_t*) payload;
     receivedCount++;
     if (startTime == 0) {
       startTime = call FinishTimer.getNow();
     }
     endTime = call FinishTimer.getNow();
-    for (i = 0; i < MSG_SIZE; i++) {
-      if (rcvd_payload->data[i] != i) {
-        call SerialLogger.log(LOG_MSG_ERROR_I, i);
-        call SerialLogger.log(LOG_MSG_ERROR_DATA, rcvd_payload->data[i]);
-      }
-    }
     return msg;
   }
 
@@ -135,6 +125,9 @@
   event void SendTimer.fired() {
     if (transmitting) {
       sendMessage();
+      if (sendCount >= NUM_MSGS) {
+        transmitting = FALSE;
+      }
     } else {
       call SendTimer.stop();
     }
@@ -192,3 +185,5 @@
 
   event void MpdrRouting.pathsReady(am_addr_t destination) {}
 }
+
+// Fix

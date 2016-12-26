@@ -34,12 +34,15 @@ do
       fi
       if [ -e data/data_$i\_$j.dat ] && [ ! -e outputs/output_$i\_$j.txt ]
       then
-        glpsol -m shortest_paths_with_parity.mod -d data/data_$i\_$j.dat -o outputs/output_$i\_$j.txt -y glpsol_log.txt
+        glpsol -m shortest_paths_with_parity.mod -d data/data_$i\_$j.dat -o outputs/output_$i\_$j.txt > glpsol_log.txt
       fi
       if [ -e outputs/output_$i\_$j.txt ] && [ ! -e routes/dual_$i\_$j.txt ]
       then
         python create_route_file.py -i outputs/output_$i\_$j.txt -o routes/dual_$i\_$j.txt
       fi
     fi
+    printf "\r $i $j"
   done
 done
+
+printf "\n"

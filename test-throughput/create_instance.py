@@ -1,23 +1,6 @@
-import subprocess
-import glob
-import re
-import sys
 import argparse
 
-def execute(command):
-    p = subprocess.Popen(command, stdout=subprocess.PIPE)
-    output, error = p.communicate()
-    if error is None:
-        return output
-    return error
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--route-file", nargs="?",
-                        type=argparse.FileType("r"), required=True)
-    args = parser.parse_args()
-
-    route_file = args.route_file
+def create_instance(route_file):
     part1_file = open("TestMpdrC.part1.nc", "r")
     part2_file = open("TestMpdrC.part2.nc", "r")
     output_file = open("TestMpdrC.nc", "w")
@@ -34,6 +17,13 @@ def main():
     part1_file.close()
     part2_file.close()
     output_file.close()
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--route-file", nargs="?",
+                        type=argparse.FileType("r"), required=True)
+    args = parser.parse_args()
+    create_instance(args.route_file)
 
 if __name__ == "__main__":
     main()

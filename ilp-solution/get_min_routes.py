@@ -25,7 +25,7 @@ def get_min_routes(pattern):
     min_routes = {}
     for size, routes in all_routes.iteritems():
         routes.sort(key=lambda x:x[1])
-        min_routes[size] = routes[0:5]
+        min_routes[size] = routes[5:10]
     return min_routes
 
 def main():

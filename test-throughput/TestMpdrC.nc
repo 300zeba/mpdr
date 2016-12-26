@@ -1,6 +1,5 @@
 #include "TestMpdr.h"
 
-#define NUM_PATHS 1
 #define NUM_TESTS 10
 #define TEST_DELAY 10000
 #define FINISH_TIME 20000
@@ -48,29 +47,29 @@ implementation {
   uint32_t endTime = 0;
 
   // Init route
-  // cost: 108
+  // cost: 110
   // len: 16
-  uint8_t numPaths = 2;
-  uint8_t sourceNode = 26;
-  uint8_t destinationNode = 25;
+  uint8_t numPaths = 1;
+  uint8_t sourceNode = 98;
+  uint8_t destinationNode = 26;
   uint8_t numHops = 16;
   uint8_t hops[16][4] = {
-    {26, 30, 1, 1},
-    {26, 28, 2, 2},
-    {30, 27, 2, 1},
-    {27, 5, 1, 2},
-    {5, 55, 2, 2},
-    {55, 62, 1, 1},
-    {62, 63, 2, 1},
-    {63, 67, 1, 2},
-    {67, 100, 2, 2},
-    {100, 97, 1, 1},
-    {97, 25, 2, 1},
-    {28, 31, 1, 2},
-    {31, 41, 2, 1},
-    {41, 16, 1, 1},
-    {16, 18, 2, 2},
-    {18, 25, 1, 2},
+    {98, 97, 1, 1},
+    {98, 100, 2, 2},
+    {97, 94, 2, 1},
+    {94, 63, 1, 2},
+    {63, 61, 2, 2},
+    {61, 31, 1, 1},
+    {31, 28, 2, 1},
+    {28, 26, 1, 2},
+    {100, 96, 1, 2},
+    {96, 17, 2, 1},
+    {17, 16, 1, 1},
+    {16, 41, 2, 2},
+    {41, 34, 1, 2},
+    {34, 29, 2, 1},
+    {29, 30, 1, 1},
+    {30, 26, 2, 2},
   };
   // End route
 
@@ -130,7 +129,6 @@ implementation {
     error_t result;
     uint8_t i;
     if (NUM_MSGS > 0 && sendCount >= NUM_MSGS) {
-      transmitting = FALSE;
       return;
     }
     if (startTime == 0) {
@@ -169,7 +167,6 @@ implementation {
       call RadiosControl.start();
     } else {
       call MpdrControl.start();
-      numPaths = NUM_PATHS;
       call MpdrRouting.setNumPaths(numPaths);
       call InitTimer.startOneShot(INIT_TIME);
     }
@@ -181,19 +178,11 @@ implementation {
 
   event message_t* MpdrReceive.receive(message_t* msg, void* payload,
                                        uint8_t len) {
-    uint8_t i;
-    mpdr_test_msg_t* rcvd_payload = (mpdr_test_msg_t*) payload;
     receivedCount++;
     if (startTime == 0) {
       startTime = call FinishTimer.getNow();
     }
     endTime = call FinishTimer.getNow();
-    for (i = 0; i < MSG_SIZE; i++) {
-      if (rcvd_payload->data[i] != i) {
-        call SerialLogger.log(LOG_MSG_ERROR_I, i);
-        call SerialLogger.log(LOG_MSG_ERROR_DATA, rcvd_payload->data[i]);
-      }
-    }
     return msg;
   }
 
@@ -209,6 +198,9 @@ implementation {
   event void SendTimer.fired() {
     if (transmitting) {
       sendMessage();
+      if (sendCount >= NUM_MSGS) {
+        transmitting = FALSE;
+      }
     } else {
       call SendTimer.stop();
     }
@@ -266,3 +258,5 @@ implementation {
 
   event void MpdrRouting.pathsReady(am_addr_t destination) {}
 }
+
+// Fix
