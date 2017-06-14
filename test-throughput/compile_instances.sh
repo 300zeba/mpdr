@@ -1,7 +1,7 @@
 #!/bin/bash
 
-paths=1paths
-cca=withcca
+paths=1path
+cca=nocca
 ack=withack
 
 if [ "$paths" == "2paths" ]

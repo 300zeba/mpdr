@@ -8,9 +8,20 @@ generic module MpdrRoutingEngineP() {
   }
   uses {
     interface AMSend as RoutingSend1;
-    interface Receive as RoutingReceive1;
     interface AMSend as RoutingSend2;
+    interface Receive as RoutingReceive1;
     interface Receive as RoutingReceive2;
+
+    interface AMSend as FindSend1;
+    interface AMSend as FindSend2;
+    interface Receive as FindReceive1;
+    interface Receive as FindReceive2;
+
+    interface AMSend as TraceSend1;
+    interface AMSend as TraceSend2;
+    interface Receive as TraceReceive1;
+    interface Receive as TraceReceive2;
+
     interface RadioChannel as RadioChannel1;
     interface RadioChannel as RadioChannel2;
     interface PacketAcknowledgements as RoutingAck;

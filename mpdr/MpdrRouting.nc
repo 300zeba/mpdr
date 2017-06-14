@@ -22,6 +22,8 @@ interface MpdrRouting {
 
   command uint8_t getNumPaths();
 
+  command void startFinding(am_addr_t destination);
+
   event void pathsReady(am_addr_t destination);
 
 }

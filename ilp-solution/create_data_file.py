@@ -1,5 +1,6 @@
 import re
 import argparse
+import networkx as nx
 
 def read_log_file(file, format):
     """

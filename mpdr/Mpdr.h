@@ -37,4 +37,17 @@ typedef nx_struct mpdr_routing_msg {
   nx_am_addr_t items[MAX_MPDR_HOPS];
 } mpdr_routing_msg_t;
 
+typedef nx_struct mpdr_find_msg {
+  nx_am_addr_t source;
+  nx_am_addr_t destination;
+  nx_am_addr_t last_hop;
+  nx_uint16_t distance;
+} mpdr_find_msg_t;
+
+typedef nx_struct mpdr_trace_msg {
+  nx_am_addr_t source;
+  nx_am_addr_t destination;
+  nx_am_addr_t last_hop;
+} mpdr_trace_msg_t;
+
 #endif
