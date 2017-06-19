@@ -342,6 +342,16 @@ implementation {
     }
   }
 
+  void receivedFindMsg(message_t* msg, void* payload, uint8_t len, uint8_t radio) {
+    mpdr_find_msg_t* rmsg = (mpdr_find_msg_t*) payload;
+
+  }
+
+  void receivedTraceMsg(message_t* msg, void* payload, uint8_t len, uint8_t radio) {
+    mpdr_trace_msg_t* rmsg = (mpdr_trace_msg_t*) payload;
+
+  }
+
   event message_t* RoutingReceive1.receive(message_t* msg, void* payload, uint8_t len) {
     receivedRoutingMsg(msg, payload, len);
     return msg;
@@ -349,6 +359,26 @@ implementation {
 
   event message_t* RoutingReceive2.receive(message_t* msg, void* payload, uint8_t len) {
     receivedRoutingMsg(msg, payload, len);
+    return msg;
+  }
+
+  event message_t* FindReceive1.receive(message_t* msg, void* payload, uint8_t len) {
+    receivedFindMsg(msg, payload, len, 1);
+    return msg;
+  }
+
+  event message_t* FindReceive2.receive(message_t* msg, void* payload, uint8_t len) {
+    receivedFindMsg(msg, payload, len, 2);
+    return msg;
+  }
+
+  event message_t* TraceReceive1.receive(message_t* msg, void* payload, uint8_t len) {
+    receivedTraceMsg(msg, payload, len, 1);
+    return msg;
+  }
+
+  event message_t* TraceReceive2.receive(message_t* msg, void* payload, uint8_t len) {
+    receivedTraceMsg(msg, payload, len, 2);
     return msg;
   }
 
