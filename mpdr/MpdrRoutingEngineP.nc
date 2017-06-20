@@ -39,6 +39,18 @@ implementation {
   bool received2 = FALSE;
   uint8_t numRoutes = 2;
 
+  uint16_t current_iteration = 0;
+  mpdr_type_t type;
+  uint16_t dist[2];
+  am_addr_t next[2];
+  am_addr_t prev[2];
+  am_addr_t FN_phcr[2];
+  uint16_t FN_dist[2];
+  am_addr_t FHB_phcr[2];
+  uint16_t FHB_dist[2];
+  am_addr_t OHB_phcr[2];
+  uint16_t OHB_dist[2];
+
   void initTables() {
     fwdTable.size = 0;
     sendTable.size = 0;
@@ -342,14 +354,133 @@ implementation {
     }
   }
 
-  void receivedFindMsg(message_t* msg, void* payload, uint8_t len, uint8_t radio) {
-    mpdr_find_msg_t* rmsg = (mpdr_find_msg_t*) payload;
+  void beginIteration(uint16_t iteration) {
+    current_iteration = iteration;
+    if (iteration == 1 || iteration == 3) {
+      type = FREE;
+      next[0] = INVALID_ADDR;
+      next[1] = INVALID_ADDR;
+      prev[0] = INVALID_ADDR;
+      prev[1] = INVALID_ADDR;
+    }
+    FN_phcr[0] = INVALID_ADDR;
+    FN_phcr[1] = INVALID_ADDR;
+    FN_dist[0] = INFINITE_VALUE;
+    FN_dist[1] = INFINITE_VALUE;
+    FHB_phcr[0] = INVALID_ADDR;
+    FHB_phcr[1] = INVALID_ADDR;
+    FHB_dist[0] = INFINITE_VALUE;
+    FHB_dist[1] = INFINITE_VALUE;
+    OHB_phcr[0] = INVALID_ADDR;
+    OHB_phcr[1] = INVALID_ADDR;
+    OHB_dist[0] = INFINITE_VALUE;
+    OHB_dist[1] = INFINITE_VALUE;
+  }
 
+  uint16_t getEdgeWeight(am_addr_t neighbor) {
+    // TODO: implement the function to get the edge weight.
+    return 1;
+  }
+
+  void sendFindMessage(am_addr_t source, am_addr_t destination,
+                       am_addr_t next_hop, uint8_t radio, uint16_t distance) {
+    // TODO: implement function to broadcast find message
+  }
+
+  void sendTraceMessage(am_addr_t source, am_addr_t destination,
+                        am_addr_t next_hop, uint8_t radio, uint16_t distance) {
+    // TODO: implement function to send trace message
+  }
+
+  bool inPrev(am_addr_t node) {
+    return (node == prev[0] || node == prev[1]);
+  }
+
+  bool inNext(am_addr_t node) {
+    return (node == next[0] || node == next[1]);
+  }
+
+  void receivedFindMsg(message_t* msg, void* payload, uint8_t len,
+                       uint8_t radio) {
+    mpdr_find_msg_t* rmsg = (mpdr_find_msg_t*) payload;
+    am_addr_t source = rmsg->source;
+    am_addr_t destination = rmsg->destination;
+    am_addr_t last_hop = rmsg->last_hop;
+    uint16_t iteration = rmsg->iteration;
+    uint16_t distance = rmsg->distance;
+    uint16_t weight = getEdgeWeight(last_hop);
+    uint8_t send_radio = (radio + 1) % 2;
+    if (current_iteration != iteration) {
+      beginIteration(iteration);
+    }
+    if (TOS_NODE_ID == rmsg->source) {
+      return;
+    }
+    if (type == FREE) {
+      dist[radio] = distance + weight;
+      if (dist[radio] < FN_dist[radio]) {
+        FN_phcr[radio] = last_hop;
+        FN_dist[radio] = dist[radio];
+        sendFindMessage(source, destination, AM_BROADCAST_ADDR, send_radio,
+                        dist[radio]);
+      }
+    } else if (type == OCCUPIED && !inPrev(last_hop) && !inNext(last_hop)) {
+      dist[radio] = distance + weight;
+      if (dist[radio] < FHB_dist[radio]) {
+        FHB_phcr[radio] = last_hop;
+        FHB_dist[radio] = dist[radio];
+        if (TOS_NODE_ID != destination) {
+          sendFindMessage(source, destination, prev[0], send_radio,
+                          dist[radio]);
+        }
+      }
+    } else if (type == OCCUPIED && inNext(last_hop)) {
+      dist[radio] = distance - weight;
+      if (dist[radio] < OHB_dist[radio]) {
+        OHB_phcr[radio] = last_hop;
+        OHB_dist[radio] = dist[radio];
+        sendFindMessage(source, destination, AM_BROADCAST_ADDR, send_radio,
+                        dist[radio]);
+      }
+    }
   }
 
   void receivedTraceMsg(message_t* msg, void* payload, uint8_t len, uint8_t radio) {
     mpdr_trace_msg_t* rmsg = (mpdr_trace_msg_t*) payload;
-
+    am_addr_t source = rmsg->source;
+    am_addr_t destination = rmsg->destination;
+    am_addr_t last_hop = rmsg->last_hop;
+    uint16_t iteration = rmsg->iteration;
+    uint16_t distance = rmsg->distance;
+    uint8_t send_radio = (radio + 1) % 2;
+    if (TOS_NODE_ID == source) {
+      if (type == FREE) {
+        type = OCCUPIED;
+        next[0] = last_hop;
+      } else {
+        next[1] = last_hop;
+      }
+    } else if (type == FREE) {
+      type = OCCUPIED;
+      next[0] = last_hop;
+      prev[0] = FN_phcr[send_radio];
+      sendTraceMessage(source, destination, FN_phcr[send_radio], send_radio,
+                       distance);
+    } else if (type == OCCUPIED && !inPrev(last_hop)) {
+      next[0] = last_hop;
+      sendTraceMessage(source, destination, OHB_phcr[send_radio], send_radio,
+                       distance);
+    } else if (type == OCCUPIED && inPrev(last_hop)
+               && FHB_dist[send_radio] > OHB_dist[send_radio]) {
+      type = FREE;
+      prev[0] = INVALID_ADDR;
+      next[0] = INVALID_ADDR;
+      sendTraceMessage(source, destination, OHB_phcr[send_radio], send_radio,
+                       distance);
+    } else if (type == OCCUPIED && inPrev(last_hop)
+               && FHB_dist[send_radio] <= OHB_dist[send_radio]) {
+      prev[0] = FHB_phcr[send_radio];
+    }
   }
 
   event message_t* RoutingReceive1.receive(message_t* msg, void* payload, uint8_t len) {
@@ -363,23 +494,27 @@ implementation {
   }
 
   event message_t* FindReceive1.receive(message_t* msg, void* payload, uint8_t len) {
-    receivedFindMsg(msg, payload, len, 1);
+    receivedFindMsg(msg, payload, len, 0);
     return msg;
   }
 
   event message_t* FindReceive2.receive(message_t* msg, void* payload, uint8_t len) {
-    receivedFindMsg(msg, payload, len, 2);
+    receivedFindMsg(msg, payload, len, 1);
     return msg;
   }
 
   event message_t* TraceReceive1.receive(message_t* msg, void* payload, uint8_t len) {
-    receivedTraceMsg(msg, payload, len, 1);
+    receivedTraceMsg(msg, payload, len, 0);
     return msg;
   }
 
   event message_t* TraceReceive2.receive(message_t* msg, void* payload, uint8_t len) {
-    receivedTraceMsg(msg, payload, len, 2);
+    receivedTraceMsg(msg, payload, len, 1);
     return msg;
+  }
+
+  command void MpdrRouting.startFinding(am_addr_t destination) {
+    // TODO: implement command to start finding paths
   }
 
   event void RoutingSend1.sendDone(message_t* msg, error_t error) {
@@ -406,6 +541,22 @@ implementation {
       /*call SerialLogger.log(LOG_SET_RADIO_CHANNEL_2, channel);*/
       call RadioChannel2.setChannel(channel);
     }
+  }
+
+  event void FindSend1.sendDone(message_t* msg, error_t error) {
+
+  }
+
+  event void FindSend2.sendDone(message_t* msg, error_t error) {
+
+  }
+
+  event void TraceSend1.sendDone(message_t* msg, error_t error) {
+
+  }
+
+  event void TraceSend2.sendDone(message_t* msg, error_t error) {
+
   }
 
   event void RadioChannel1.setChannelDone() {

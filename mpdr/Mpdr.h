@@ -4,6 +4,7 @@
 #define MAX_MPDR_TABLE_SIZE 10
 #define MAX_MPDR_HOPS 5
 #define INVALID_ADDR AM_BROADCAST_ADDR
+#define INFINITE_VALUE 65535u
 
 typedef struct mpdr_routing_item {
   am_addr_t source;
@@ -37,10 +38,16 @@ typedef nx_struct mpdr_routing_msg {
   nx_am_addr_t items[MAX_MPDR_HOPS];
 } mpdr_routing_msg_t;
 
+typedef enum {
+  FREE,
+  OCCUPIED,
+} mpdr_type_t;
+
 typedef nx_struct mpdr_find_msg {
   nx_am_addr_t source;
   nx_am_addr_t destination;
   nx_am_addr_t last_hop;
+  nx_uint16_t iteration;
   nx_uint16_t distance;
 } mpdr_find_msg_t;
 
@@ -48,6 +55,8 @@ typedef nx_struct mpdr_trace_msg {
   nx_am_addr_t source;
   nx_am_addr_t destination;
   nx_am_addr_t last_hop;
+  nx_uint16_t iteration;
+  nx_uint16_t distance;
 } mpdr_trace_msg_t;
 
 #endif
