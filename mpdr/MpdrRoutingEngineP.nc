@@ -26,6 +26,8 @@ generic module MpdrRoutingEngineP() {
     interface RadioChannel as RadioChannel2;
     interface PacketAcknowledgements as RoutingAck;
     interface SerialLogger;
+
+    interface Timer<TMilli> as TraceTimer;
   }
 }
 
@@ -34,6 +36,8 @@ implementation {
   mpdr_routing_table_t fwdTable;
   mpdr_routing_table_t sendTable;
   message_t msgBuffer;
+  message_t msg1;
+  message_t msg2;
   uint8_t received = 0;
   bool received1 = FALSE;
   bool received2 = FALSE;
@@ -384,12 +388,44 @@ implementation {
 
   void sendFindMessage(am_addr_t source, am_addr_t destination,
                        am_addr_t next_hop, uint8_t radio, uint16_t distance) {
-    // TODO: implement function to broadcast find message
+    mpdr_find_msg_t* smsg;
+    error_t result;
+    if (radio == 0) {
+      smsg = call FindSend1.getPayload(&msg1, sizeof(mpdr_find_msg_t));
+    } else {
+      smsg = call FindSend2.getPayload(&msg2, sizeof(mpdr_find_msg_t));
+    }
+    smsg->source = source;
+    smsg->destination = destination;
+    smsg->last_hop = TOS_NODE_ID;
+    smsg->iteration = current_iteration;
+    smsg->distance = distance;
+    if (radio == 0) {
+      result = call FindSend1.send(next_hop, &msg1, sizeof(mpdr_find_msg_t));
+    } else {
+      result = call FindSend2.send(next_hop, &msg2, sizeof(mpdr_find_msg_t));
+    }
   }
 
   void sendTraceMessage(am_addr_t source, am_addr_t destination,
                         am_addr_t next_hop, uint8_t radio, uint16_t distance) {
-    // TODO: implement function to send trace message
+    mpdr_trace_msg_t* smsg;
+    error_t result;
+    if (radio == 0) {
+      smsg = call TraceSend1.getPayload(&msg1, sizeof(mpdr_trace_msg_t));
+    } else {
+      smsg = call TraceSend2.getPayload(&msg2, sizeof(mpdr_trace_msg_t));
+    }
+    smsg->source = source;
+    smsg->destination = destination;
+    smsg->last_hop = TOS_NODE_ID;
+    smsg->iteration = current_iteration;
+    smsg->distance = distance;
+    if (radio == 0) {
+      result = call TraceSend1.send(next_hop, &msg1, sizeof(mpdr_trace_msg_t));
+    } else {
+      result = call TraceSend2.send(next_hop, &msg2, sizeof(mpdr_trace_msg_t));
+    }
   }
 
   bool inPrev(am_addr_t node) {
@@ -514,7 +550,8 @@ implementation {
   }
 
   command void MpdrRouting.startFinding(am_addr_t destination) {
-    // TODO: implement command to start finding paths
+    current_iteration = 1;
+    sendFindMessage(TOS_NODE_ID, destination, AM_BROADCAST_ADDR, 0, 0);
   }
 
   event void RoutingSend1.sendDone(message_t* msg, error_t error) {
